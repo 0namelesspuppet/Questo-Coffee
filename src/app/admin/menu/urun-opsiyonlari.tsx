@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { Plus, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { customAlphabet } from 'nanoid';
 import type { Urun, UrunOpsiyonGrubu } from '@/types/model';
 import { tlToKurus } from '@/lib/utils/para';
 import { cn } from '@/lib/utils';
@@ -22,10 +21,18 @@ interface DuzenleGrup {
   secenekler: Array<{ id: string; ad: string; ekFiyatTL: string }>;
 }
 
-const idUret = customAlphabet(
-  '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz',
-  8,
-);
+// Kısa ID — opsiyon grubu/seçeneği için (Firestore'a gömülü dizi).
+// Uygulama LAN http'de çalışır; güvenli olmayan bağlamda crypto.randomUUID
+// tanımsızdır, bu yüzden crypto.getRandomValues (her yerde mevcut) kullanılır.
+const ID_ALFABE =
+  '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+const idUret = (): string => {
+  const bytes = new Uint8Array(8);
+  crypto.getRandomValues(bytes);
+  let s = '';
+  for (const b of bytes) s += ID_ALFABE[b % ID_ALFABE.length];
+  return s;
+};
 
 const grubuYukle = (g: UrunOpsiyonGrubu): DuzenleGrup => ({
   id: g.id,

@@ -46,18 +46,11 @@ interface SayacOkuma {
   gunlukSiparisNo: number;
 }
 
-interface RateLimitOkuma {
-  pencere: number[];
-}
-
 interface IdempotencyOkuma {
   musteriUid: string;
   sonuc: SiparisYazSonuc;
 }
 
-// ── Rate limit ayarları ────────────────────────────────────────────────
-const RATE_PENCERE_MS = 60_000;
-const RATE_LIMIT = 10;
 // ── Idempotency ──────────────────────────────────────────────────────
 const IDEMPOTENCY_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -75,20 +68,13 @@ const restoranId = (): string => {
  * - Stokta olmayan ürün → işlem tümüyle geri alınır.
  * - Günlük sıra no atomik increment ile yazılır.
  * - Açık adisyon aynı transaction'da sorgulanıp tek tutulur (yarış koşulu yok).
- * - **Rate limit:** musteriUid başına 60 saniyede en fazla 10 sipariş.
  * - **Idempotency:** opsiyonel idempotencyKey ile aynı istek tekrarlanırsa
  *   önceki sonuç döner (24 saat TTL).
  */
-export interface SiparisYazSecenekler {
-  /** true ise rate limit kontrolu atlanir (kasiyer/garson icin). */
-  rateLimitAtla?: boolean;
-}
-
 export const siparisYaz = async (
   istek: SiparisIstegiT,
   musteriUid: string,
   idempotencyKey?: string,
-  secenekler: SiparisYazSecenekler = {},
 ): Promise<SiparisYazSonuc> => {
   const R = restoranId();
   const db = getAdminDb();
@@ -99,9 +85,6 @@ export const siparisYaz = async (
   const sayacRef = db.doc(
     `restoranlar/${R}/sayaclar/${istanbulGunId()}`,
   );
-  const rateRef = secenekler.rateLimitAtla
-    ? null
-    : db.doc(`rateLimit/${musteriUid}`);
   const idempotencyRef = idempotencyKey
     ? db.doc(`idempotency/${idempotencyKey}`)
     : null;
@@ -123,31 +106,8 @@ export const siparisYaz = async (
       }
     }
 
-    // ── 2) Rate limit kontrolü ─────────────────────────────────────────
+    // ── 2) Okumalar (yazılardan önce HEPSİ) ────────────────────────────
     const simdi = Date.now();
-    let guncelPencere: number[] = [];
-    if (rateRef) {
-      const rateSnap = await tx.get(rateRef);
-      const oncekiPencere = rateSnap.exists
-        ? ((rateSnap.data() as RateLimitOkuma).pencere ?? [])
-        : [];
-      guncelPencere = oncekiPencere.filter(
-        (t) => simdi - t < RATE_PENCERE_MS,
-      );
-      if (guncelPencere.length >= RATE_LIMIT) {
-        const ilkZaman = guncelPencere[0] ?? simdi;
-        const beklemeSn = Math.ceil(
-          (RATE_PENCERE_MS - (simdi - ilkZaman)) / 1000,
-        );
-        throw new AppError(
-          'rate_limit',
-          `Çok sık sipariş veriyorsunuz. ${beklemeSn} saniye sonra tekrar deneyin.`,
-          429,
-        );
-      }
-    }
-
-    // ── 3) Diğer okumalar (yazılardan önce HEPSİ) ──────────────────────
     const masaRef = masalarRef.doc(istek.masaId);
     const masaSnap = await tx.get(masaRef);
     if (!masaSnap.exists || masaSnap.data()?.aktifMi !== true) {
@@ -335,11 +295,6 @@ export const siparisYaz = async (
         stokMiktar: g.yeniMiktar,
         ...(g.yeniMiktar === 0 ? { stoktaMi: false } : {}),
       });
-    }
-
-    // Rate limit penceresini guncelle (varsa)
-    if (rateRef) {
-      tx.set(rateRef, { pencere: [...guncelPencere, simdi] }, { merge: true });
     }
 
     const sonuc: SiparisYazSonuc = {

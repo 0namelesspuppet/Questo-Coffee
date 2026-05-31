@@ -5,7 +5,7 @@ import { SiparisIstegi } from '@/lib/utils/zod-semalar';
 
 export const runtime = 'nodejs';
 
-// Garson/kasiyer siparis girisi — kasiyer auth ile, rate limit atlanir.
+// Garson/kasiyer siparis girisi — kasiyer auth ile, idempotency ile cift istek korumalidir.
 // Masa, masaId ile dogrudan cozulur (token yok).
 export async function POST(req: Request) {
   try {
@@ -15,9 +15,7 @@ export async function POST(req: Request) {
     const idempotencyKey =
       req.headers.get('idempotency-key')?.slice(0, 128) ?? undefined;
 
-    const sonuc = await siparisYaz(body, u.uid, idempotencyKey, {
-      rateLimitAtla: true,
-    });
+    const sonuc = await siparisYaz(body, u.uid, idempotencyKey);
     return Response.json({ ok: true, ...sonuc });
   } catch (e) {
     return httpHata(e);

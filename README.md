@@ -34,7 +34,7 @@ ve `scripts\*.vbs` dosyaları **"güvenli olmayabilir"** diye engellenebilir
 - **Backend:** Firebase Firestore + Auth + App Check; güvenilir mutasyonlar
   Admin SDK ile Next.js route handler'lar üzerinden
 - **Para:** Tüm tutarlar **kuruş (integer)** olarak saklanır
-- **Sipariş güvenliği:** Müşteri yalnızca `{urunId, adet}` gönderir; toplam
+- **Sipariş güvenliği:** İstemci yalnızca `{urunId, adet}` gönderir; toplam
   sunucuda menüden okunarak hesaplanır, snapshot olarak yazılır
 
 ## Klasör Yapısı (üst seviye)
@@ -143,8 +143,8 @@ Push veya PR'da otomatik tetiklenir.
 Bu, idempotency dokümanlarının 24 saat sonra otomatik silinmesini sağlar.
 Etkinleştirilmezse koleksiyon zamanla büyür.
 
-**Rate limit:** Her müşteri Anon UID için 60 saniyede 10 sipariş. Aşılırsa
-HTTP 429 döner. Limiti `lib/siparis/servis.ts` içinden değiştirebilirsin.
+**Idempotency:** Aynı `idempotency-key` ile tekrarlanan sipariş isteği önceki
+sonucu döndürür (24 saat TTL) — kazara çift gönderim güvenli.
 
 **Audit log:** Tüm admin yazımları `restoranlar/{R}/kullaniciAksiyonlari`
 altına yazılır. Yalnız sahip okuyabilir (Firestore rules).
@@ -182,6 +182,6 @@ firebase emulators:start --only firestore,functions,auth
 - [x] Faz 4 — Kasa (Kanban, adisyon paneli, durum güncelleme)
 - [x] Faz 5 — Admin (menü/masa CRUD)
 - [x] Faz 6 — Operasyonel + Cloud Functions (SLA bildirim)
-- [x] Faz 7 — Güvenlik sertleştirme (rate limit + idempotency + audit log)
+- [x] Faz 7 — Güvenlik sertleştirme (idempotency + audit log)
 - [x] Faz 8 — Ürün görseli + günlük rapor + KVKK
 - [x] Faz 9 — CI + Vitest birim testleri (28 test)
