@@ -59,9 +59,10 @@ Write-Host ""
 Write-Host "[tailscale] Uzaktan erisim ACIK. Telefon/tabletten (Tailscale acikken,"
 Write-Host "            herhangi bir agdan) asagidaki adresi acin:"
 Write-Host ""
-if ($dns) { Write-Host "    http://${dns}:3000" }
-if ($ip)  { Write-Host "    http://${ip}:3000   (yedek - IP ile)" }
+if ($ip)  { Write-Host "    http://${ip}:3000   <-- ONERILEN (IP her zaman cozulur)" }
+if ($dns) { Write-Host "    http://${dns}:3000   (MagicDNS acik/calisiyorsa)" }
 Write-Host ""
 Write-Host "    Not: 'https' DEGIL 'http' kullanin (emulator HTTP konusur; trafik"
-Write-Host "    zaten Tailscale tarafindan sifrelenir)."
+Write-Host "    zaten Tailscale tarafindan sifrelenir). MagicDNS ismi telefonun DNS"
+Write-Host "    ayarina bagli oynak olabilir; sorun olursa IP adresini kullanin."
 exit 0

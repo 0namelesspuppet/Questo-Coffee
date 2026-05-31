@@ -64,9 +64,13 @@ tailscale serve status
 ```
 veya `logs\tailscale.log` dosyasına bak. Adres şuna benzer (HTTP, port 3000):
 ```
-http://wandererpc.<tailnet-adın>.ts.net:3000
-http://100.x.x.x:3000          (yedek - IP ile)
+http://100.x.x.x:3000                  <-- ÖNERİLEN (IP her zaman çözülür)
+http://wandererpc.<tailnet-adın>.ts.net:3000   (MagicDNS açık/çalışıyorsa)
 ```
+
+> **IP'yi tercih et.** MagicDNS ismi telefonun DNS ayarına bağlı olarak bazen
+> çözülmez; Tailscale **IP'si** (`100.x.x.x`) o cihaza kalıcı atanır, değişmez ve
+> her zaman çalışır.
 
 ### Adım 2.5 — Telefonda "ana ekrana ekle"
 1. Telefonda Tailscale **açıkken**, tarayıcıda yukarıdaki **`http://...:3000`** adresini aç.
