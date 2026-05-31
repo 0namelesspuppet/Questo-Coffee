@@ -1,21 +1,24 @@
-# Questo'yu Tailscale uzerinden HTTPS olarak yayinlar (farkli aglardan erisim).
+# Questo'ya farkli aglardan erisim adresini (Tailscale) bildirir.
 #
-# Mantik: PC host kalir; Tailscale ozel sanal agi sayesinde telefon/tablet
-# HANGI AGDA olursa olsun (mobil veri dahil) PC'ye sabit bir isimle baglanir.
-# 'tailscale serve' yerel 3000 portunu, tailnet'e ait GERCEK/guvenilir bir
-# HTTPS sertifikasiyla disari verir; boylece iOS'ta tam PWA da calisir.
+# MIMARI KARARI (neden HTTP, neden 'serve' YOK):
+#   Bu sistem YEREL Firebase emulator kullanir (auth/firestore yalniz HTTP konusur).
+#   Sayfa HTTPS'ten servis edilirse, istemci emulator'e HTTP ile baglanamaz
+#   ("mixed content" -> auth/network-request-failed). Bu yuzden HTTPS 'tailscale
+#   serve' KULLANMIYORUZ. Bunun yerine sayfa da emulator de DUZ HTTP, ayni host
+#   (Tailscale IP/MagicDNS adi) uzerinden konusur -> mixed content yok, auth calisir.
+#   Trafik zaten Tailscale (WireGuard) tarafindan sifrelenir; "guvensiz" etiketi
+#   kozmetiktir. PC acik oldugu surece her agdan (mobil veri dahil) erisilir.
 #
 # Davranis:
-#   - Tailscale kurulu DEGILSE  -> sessizce cik (lokal-only kullanim bozulmaz).
-#   - Kurulu ama oturum kapaliysa -> ne yapilmasi gerektigini yaz, cik.
-#   - Kurulu ve hazirsa          -> 3000'i yayinla, kullanilacak URL'i yaz.
+#   - Tailscale kurulu DEGILSE     -> sessizce cik (lokal-only kullanim bozulmaz).
+#   - Kurulu ama oturum kapaliysa   -> ne yapilmasi gerektigini yaz, cik.
+#   - Kurulu ve hazirsa            -> eski HTTPS serve varsa temizle, HTTP adresini yaz.
 #
-# Bu script "Questo'yu Baslat.bat" tarafindan Next.js ayaga kalktiktan sonra
-# otomatik cagrilir; elle de calistirabilirsiniz.
+# Bu script "Questo'yu Baslat.bat" tarafindan otomatik cagrilir; elle de calisir.
 #
-# ONEMLI: Bu dosya bilerek SADECE ASCII icerir (Windows PowerShell 5.1, BOM'suz
-# UTF-8'deki Turkce/kutu-cizgi/uzun-tire karakterlerini yanlis okuyup ayristirma
-# hatasi verir). Bu yuzden burada Turkce karakter ve sus karakteri kullanilmaz.
+# ONEMLI: Bu dosya bilerek SADECE ASCII icerir (Windows PowerShell 5.1 BOM'suz
+# UTF-8'deki Turkce/kutu-cizgi/uzun-tire karakterlerini yanlis okuyup ayristirmayi
+# bozar). Bu yuzden burada Turkce karakter ve sus karakteri kullanilmaz.
 
 $ErrorActionPreference = 'SilentlyContinue'
 
@@ -42,21 +45,23 @@ if ($durum.BackendState -ne 'Running') {
     exit 0
 }
 
-# --- 3000 portunu HTTPS olarak yayinla (arka planda, kalici) ---
-& $ts serve --bg 3000 2>$null | Out-Null
+# --- Eski HTTPS 'serve' yapilandirmasi varsa temizle ---
+# (Onceki surumlerde HTTPS serve aciliyordu; bu adres auth'u bozdugu icin
+#  artik kullanilmiyor. Stale kalmasin diye sifirla.)
+& $ts serve reset 2>$null | Out-Null
 
-# --- Kullanilacak URL'i hesapla ve yaz ---
+# --- Erisim adres(ler)ini hesapla ve yaz (DUZ HTTP, port 3000) ---
+$ip  = $durum.Self.TailscaleIPs | Select-Object -First 1
 $dns = $durum.Self.DNSName
-if ($dns) {
-    $dns = $dns.TrimEnd('.')
-    $url = "https://$dns"
-    Write-Host ""
-    Write-Host "[tailscale] Uzaktan erisim ACIK:"
-    Write-Host "    $url"
-    Write-Host ""
-    Write-Host "    Telefon/tabletten (Tailscale acikken, herhangi bir agdan) bu adresi acin."
-    Write-Host "    QR/PWA icin .env.local -> NEXT_PUBLIC_APP_URL=$url yapabilirsiniz."
-} else {
-    Write-Host "[tailscale] Yayinlandi. Adres icin: tailscale serve status"
-}
+if ($dns) { $dns = $dns.TrimEnd('.') }
+
+Write-Host ""
+Write-Host "[tailscale] Uzaktan erisim ACIK. Telefon/tabletten (Tailscale acikken,"
+Write-Host "            herhangi bir agdan) asagidaki adresi acin:"
+Write-Host ""
+if ($dns) { Write-Host "    http://${dns}:3000" }
+if ($ip)  { Write-Host "    http://${ip}:3000   (yedek - IP ile)" }
+Write-Host ""
+Write-Host "    Not: 'https' DEGIL 'http' kullanin (emulator HTTP konusur; trafik"
+Write-Host "    zaten Tailscale tarafindan sifrelenir)."
 exit 0

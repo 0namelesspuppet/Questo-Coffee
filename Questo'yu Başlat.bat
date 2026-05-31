@@ -78,8 +78,8 @@ if errorlevel 1 (
     exit /b 1
 )
 
-rem [+] Uzaktan erisim: Tailscale kuruluysa siteyi HTTPS olarak tailnet'e yayinla.
-rem      Kurulu degilse script sessizce cikar — yerel ag erisimi normal calisir.
+rem [+] Uzaktan erisim: Tailscale kuruluysa HTTP erisim adresini bildirir (emulator
+rem      HTTP konustugu icin HTTPS DEGIL). Kurulu degilse sessizce gecer.
 echo   [+]   Uzaktan erisim (Tailscale) kontrol ediliyor...
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\tailscale-yayinla.ps1" >> "%LOG%\tailscale.log" 2>&1
 
