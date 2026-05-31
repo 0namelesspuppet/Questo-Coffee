@@ -5,6 +5,16 @@ title Questo - Baslatiliyor...
 color 06
 cd /d "%~dp0"
 
+rem [0/5] Ilk kurulum: .env.local yoksa ya da bossa yerel emulator sablonundan uret.
+rem GitHub'dan indirince .env.local gelmez (.gitignore'da). Bu adim olmadan seed
+rem "RESTORAN_ID eksik" ile coker ve uygulama emulatore baglanamaz.
+set "ENVSIZE=0"
+if exist ".env.local" for %%A in (".env.local") do set "ENVSIZE=%%~zA"
+if "!ENVSIZE!"=="0" (
+    echo   Ilk kurulum: .env.local olusturuluyor ^(yerel emulator ayarlari^)...
+    copy /y ".env.local.ornek" ".env.local" >nul
+)
+
 set "QUESTO_URL=http://localhost:3000"
 set "LOG=logs"
 

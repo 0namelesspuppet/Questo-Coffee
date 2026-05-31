@@ -9,7 +9,7 @@
     "start": "next start -H 0.0.0.0",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "emulators": "firebase emulators:start --only auth,firestore,storage --import=./emulator-veri --export-on-exit",
+    "emulators": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/emulator-baslat.ps1",
     "seed": "node --env-file=.env.local scripts/seed.mjs",
     "kill-ports": "powershell -NoProfile -Command \"@(3000,4000,4400,4500,9099,8080,9199,9150) | ForEach-Object { (Get-NetTCPConnection -LocalPort $_ -ErrorAction SilentlyContinue).OwningProcess } | Sort-Object -Unique | Where-Object { $_ -gt 0 } | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }\"",
     "dev:all": "npm run kill-ports && concurrently --names \"emu,next\" --prefix-colors \"yellow,cyan\" --kill-others-on-fail \"npm:emulators\" \"npm:dev\"",

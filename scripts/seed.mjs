@@ -239,6 +239,22 @@ const koleksiyonuBosalt = async (koleksiyon) => {
 const main = async () => {
   console.log(`Seed başlıyor → restoranlar/${restoranId}\n`);
 
+  // Idempotent: emulator modunda menü zaten doluysa yeniden seed etme.
+  // Aksi halde her açılışta masalar silinip yeniden eklenir => masa token'ları
+  // (QR kodları) değişir ve basılı QR'lar bozulur. Zorla yeniden yüklemek için
+  // SEED_FORCE=1 (bkz. "Demo Veriyi Yukle.bat").
+  const zorla = process.env.SEED_FORCE === '1';
+  if (emulatorHost && !zorla) {
+    const mevcut = await baseRef.collection('urunler').limit(1).get();
+    if (!mevcut.empty) {
+      console.log(
+        '• Menü zaten dolu — demo veri atlandı (yeniden yüklemek için "Demo Veriyi Yukle.bat").',
+      );
+      console.log('\n✓ Seed atlandı (mevcut veri korundu).');
+      return;
+    }
+  }
+
   if (emulatorHost) {
     console.log('• Emulator modu — mevcut menü/masalar temizleniyor…');
     const k = await koleksiyonuBosalt('kategoriler');
