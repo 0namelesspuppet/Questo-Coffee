@@ -350,7 +350,14 @@ const main = async () => {
   );
 };
 
-main().catch((e) => {
-  console.error('✗ Seed hatası:', e);
-  process.exit(1);
-});
+// Not: firebase-admin (Firestore/Auth) acik gRPC keep-alive baglantilari tutar;
+// main() bitse bile Node event loop bosalmaz ve proses ASILI KALIR. Bu yuzden
+// "Questo'yu Baslat.bat" icindeki "call npm run seed" hicbir zaman donmez ve
+// akis "[5/5] Demo veri yukleniyor..." adiminda sonsuza kadar takilir.
+// Cozum: is bittiginde prosesi acikca sonlandir.
+main()
+  .then(() => process.exit(0))
+  .catch((e) => {
+    console.error('✗ Seed hatası:', e);
+    process.exit(1);
+  });
