@@ -31,7 +31,7 @@ powershell -NoProfile -Command "Get-CimInstance Win32_Process -Filter \"Name='po
 
 rem Logs klasoru + eski logu temizle
 if not exist "%LOG%" mkdir "%LOG%"
-for %%f in (emulator.log nextjs.log seed.log yedek.log tailscale.log) do (
+for %%f in (emulator.log nextjs.log seed.log yedek.log) do (
     if exist "%LOG%\%%f" del /q "%LOG%\%%f"
 )
 

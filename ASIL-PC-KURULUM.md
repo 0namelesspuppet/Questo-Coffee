@@ -44,16 +44,7 @@ npm install
 
 ---
 
-## 3. Tailscale kur (aynı hesap)
-
-1. https://tailscale.com/download → Windows sürümünü kur.
-2. **Deneme PC'sindeki AYNI hesapla** giriş yap.
-3. Bu PC tailnet'te **kendi yeni IP'sini** alır (ör. `100.x.x.x`) — deneme PC'sinden
-   farklıdır, bu normaldir.
-
----
-
-## 4. İlk çalıştırma
+## 3. İlk çalıştırma
 
 `Questo'yu Başlat.bat` dosyasına çift tıkla. İlk çalıştırmada otomatik olarak:
 - `.env.local` oluşturulur (yerel emulator ayarları),
@@ -65,36 +56,28 @@ Tarayıcıda `http://localhost:3000` açılınca PC tarafı çalışıyor demekt
 
 ---
 
-## 5. Erişim adresini ayarla (asıl PC'nin IP'si)
+## 4. Yerel ağdan (aynı Wi-Fi) erişim
 
-Bu PC'nin Tailscale IP'sini öğren:
+PC ve telefon/tabletler **aynı Wi-Fi'ye** bağlı olmalı. `Başlat.bat` penceresinde
+erişim adresi yazar:
 ```
-tailscale ip -4
+http://<BILGISAYAR-ADI>:3000      (ayni Wi-Fi'deki telefon/tabletten)
 ```
-veya başlattıktan sonra `logs\tailscale.log` dosyasına bak. Çıkan `100.x.x.x`
-adresini `.env.local` içine yaz (Not Defteri ile aç):
-```
-NEXT_PUBLIC_APP_URL=http://100.x.x.x:3000
-```
-Kaydet. (Bir sonraki başlatmada ~30 sn'lik tek seferlik build olur — normaldir.)
+İsim çözülmezse PC'nin yerel IP'sini kullan (`ipconfig` → IPv4 Adresi), ör.
+`http://192.168.1.25:3000`.
 
-Telefon/tabletten erişim adresi artık:
-```
-http://100.x.x.x:3000      (asıl PC'nin Tailscale IP'si, http — https DEĞİL)
-```
+Detaylar: **`KURULUM-OTOMATIK-BASLATMA.md`**.
 
 ---
 
-## 6. Açılışta otomatik başlatmayı kur
+## 5. Açılışta otomatik başlatmayı kur
 
 `scripts\otomatik-baslat-kur.ps1` dosyasına **sağ tık → "PowerShell ile çalıştır"**,
 UAC'de **"Evet"**. Artık asıl PC her açıldığında sistem kendiliğinden kalkar.
 
-Detaylar: **`KURULUM-UZAKTAN-ERISIM.md`**.
-
 ---
 
-## 7. (Opsiyonel) Deneme verisini taşıma
+## 6. (Opsiyonel) Deneme verisini taşıma
 
 Asıl PC temiz başlamalı (seed demo menüyü kurar). Ama deneme sırasında girdiğin
 gerçek veriyi (özel menü, masalar) korumak istersen:
@@ -116,7 +99,6 @@ gerçek veriyi (özel menü, masalar) korumak istersen:
 ## Özet sıra
 1. Programlar (Node, Git, Java, firebase-tools)
 2. `git clone` + `npm install`
-3. Tailscale (aynı hesap)
-4. `Questo'yu Başlat.bat`
-5. `.env.local` → `NEXT_PUBLIC_APP_URL` = asıl PC Tailscale IP'si
-6. `otomatik-baslat-kur.ps1`
+3. `Questo'yu Başlat.bat`
+4. Aynı Wi-Fi'den `http://<BILGISAYAR-ADI>:3000`
+5. `otomatik-baslat-kur.ps1`
