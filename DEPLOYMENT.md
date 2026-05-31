@@ -243,19 +243,18 @@ $env:NEXT_PUBLIC_FIREBASE_PROJECT_ID = "<adım 1 Project ID>"
 npm run seed
 ```
 
-5 örnek masa + ürün + kategori yüklenir, token'lar terminale yazılır.
+Örnek masa + ürün + kategori yüklenir.
 
 Sonra **kafe sahibi**:
 - `https://<custom-domain>/admin/menu` → kendi menüsünü ekler
 - `https://<custom-domain>/admin/masalar` → kendi masalarını yaratır
-- `https://<custom-domain>/admin/masalar/qr` → QR PDF indir, yazdır, masalara yapıştır
 
 ---
 
 ## ✅ Bitti
 
-Müşteri telefonla QR okutur → otomatik açılır → sipariş verir → kasa
-ekranında anlık görünür. Hiçbir kurulum yok.
+Garson masadan sipariş alır → kasa ekranında anlık görünür → kasiyer
+ödemeyi alıp adisyonu kapatır. Hiçbir kurulum yok.
 
 ## Güvenlik son kontrolleri
 

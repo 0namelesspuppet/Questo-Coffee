@@ -41,13 +41,13 @@ ve `scripts\*.vbs` dosyaları **"güvenli olmayabilir"** diye engellenebilir
 
 ```
 src/
-  app/              # Next.js App Router (m/[token], kasa, admin, api)
-  components/       # UI parçaları (musteri, kasa, admin, ui)
+  app/              # Next.js App Router (kasa, admin, api)
+  components/       # UI parçaları (kasa, admin, ui)
   lib/
     firebase/       # client.ts, admin.ts, converters.ts
     auth/           # session, guard, anon
     siparis/        # transactional sipariş servisi
-    utils/          # para, token, zod-semalar, hata
+    utils/          # para, zod-semalar, hata
   types/            # domain modelleri
 ```
 
@@ -82,7 +82,7 @@ Yeni terminal aç ve bir kere çalıştır:
 npm run seed
 ```
 
-5 masa + 8 ürün oluşur. Token çıktısı listelenir.
+Örnek menü (kategoriler + ürünler) ve masalar oluşur.
 
 **Veri kalıcıdır** — emulator `--export-on-exit` ile çıkışta `./emulator-veri/`
 klasörüne yazar, sonraki açılışta `--import` ile geri yükler. Yani seed'i
@@ -123,7 +123,7 @@ npm test            # watch mode
 npm test -- --run   # tek seferlik
 ```
 
-`tests/` altında 28 birim test: para format, masa token, zod şemaları,
+`tests/` altında birim testler: para format, zod şemaları,
 sayaç tarih hesabı, AppError, zod şemaları (SiparisIstegi vb.).
 
 ## CI
