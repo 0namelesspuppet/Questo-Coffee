@@ -264,6 +264,8 @@ Garson masadan sipariş alır → kasa ekranında anlık görünür → kasiyer
       sil (tekrar gerekirse yenisini koyarsın)
 - [ ] App Check etkinleştir (Production'da bot koruması) — Firebase
       Console > App Check > reCAPTCHA v3 site key al, secrets'a ekle
+- [ ] Idempotency TTL etkin: Firestore Console > Indexes > TTL →
+      koleksiyon `idempotency`, alan `expireAt` (yoksa koleksiyon büyür)
 
 ## Aylık ne ücretlendirilir?
 
