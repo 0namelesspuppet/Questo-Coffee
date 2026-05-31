@@ -4,7 +4,6 @@ import { getAdminDb } from '@/lib/firebase/admin';
 import { httpHata } from '@/lib/utils/hata';
 import { MasaGirdi } from '@/lib/utils/zod-semalar';
 import { kapsamiDogrula } from '@/lib/admin/restoran';
-import { uretMasaToken } from '@/lib/utils/token';
 import { auditLogla } from '@/lib/audit/log';
 
 export const runtime = 'nodejs';
@@ -19,7 +18,6 @@ export async function POST(req: Request) {
       .collection(`restoranlar/${R}/masalar`)
       .add({
         ad: body.ad,
-        token: uretMasaToken(),
         aktifMi: true,
         olusturulduAt: FieldValue.serverTimestamp(),
       });

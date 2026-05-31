@@ -8,7 +8,6 @@
 import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
-import { customAlphabet } from 'nanoid';
 
 const restoranId = process.env.NEXT_PUBLIC_RESTORAN_ID;
 if (!restoranId) {
@@ -54,11 +53,6 @@ if (getApps().length === 0) {
 const db = getFirestore();
 const auth = getAuth();
 const baseRef = db.collection('restoranlar').doc(restoranId);
-
-const uretToken = customAlphabet(
-  '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz',
-  22,
-);
 
 // ── Spec'in opsiyon şablonları ────────────────────────────────────────
 const OPT_SUT = {
@@ -240,9 +234,8 @@ const main = async () => {
   console.log(`Seed başlıyor → restoranlar/${restoranId}\n`);
 
   // Idempotent: emulator modunda menü zaten doluysa yeniden seed etme.
-  // Aksi halde her açılışta masalar silinip yeniden eklenir => masa token'ları
-  // (QR kodları) değişir ve basılı QR'lar bozulur. Zorla yeniden yüklemek için
-  // SEED_FORCE=1 (bkz. "Demo Veriyi Yukle.bat").
+  // Aksi halde her açılışta masalar/menü silinip yeniden eklenir.
+  // Zorla yeniden yüklemek için SEED_FORCE=1 (bkz. "Demo Veriyi Yukle.bat").
   const zorla = process.env.SEED_FORCE === '1';
   if (emulatorHost && !zorla) {
     const mevcut = await baseRef.collection('urunler').limit(1).get();
@@ -312,10 +305,8 @@ const main = async () => {
 
   // Masalar
   for (const ad of MASALAR) {
-    const token = uretToken();
     await baseRef.collection('masalar').add({
       ad,
-      token,
       aktifMi: true,
       olusturulduAt: FieldValue.serverTimestamp(),
     });

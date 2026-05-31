@@ -90,7 +90,6 @@ export interface Urun {
 export interface Masa {
   id: string;
   ad: string;
-  token: string;
   aktifMi: boolean;
   olusturulduAt: Date;
 }

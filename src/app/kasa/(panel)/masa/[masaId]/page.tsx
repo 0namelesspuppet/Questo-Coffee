@@ -28,7 +28,7 @@ export default async function MasaSiparisSayfasi({
     .doc(`restoranlar/${restoranId}/masalar/${masaId}`)
     .get();
   if (!masaSnap.exists) notFound();
-  const masa = masaSnap.data() as { ad: string; token: string; aktifMi?: boolean };
+  const masa = masaSnap.data() as { ad: string; aktifMi?: boolean };
   if (masa.aktifMi === false) notFound();
 
   // Bu masada zaten acik bir adisyon varsa o sayfaya yonlendir
@@ -70,7 +70,7 @@ export default async function MasaSiparisSayfasi({
         <p className="text-sm text-muted-foreground">İlk sipariş alınıyor</p>
       </div>
 
-      <GarsonMenu masaToken={masa.token} masaAd={masa.ad} />
+      <GarsonMenu masaId={masaId} masaAd={masa.ad} />
     </div>
   );
 }

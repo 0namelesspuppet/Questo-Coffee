@@ -2,7 +2,6 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { apiKasiyer } from '@/lib/auth/guard';
 import { getAdminDb } from '@/lib/firebase/admin';
 import { AppError, httpHata } from '@/lib/utils/hata';
-import { uretMasaToken } from '@/lib/utils/token';
 
 export const runtime = 'nodejs';
 
@@ -31,7 +30,6 @@ export async function POST(
     const db = getAdminDb();
     const aRef = db.doc(`restoranlar/${R}/adisyonlar/${id}`);
 
-    let masaId: string | undefined;
     let kalanKurus = 0;
 
     await db.runTransaction(async (tx) => {
@@ -67,7 +65,6 @@ export async function POST(
         );
       }
 
-      masaId = a.masaId;
       tx.update(aRef, {
         durum: 'kapali',
         kapanisAt: FieldValue.serverTimestamp(),
@@ -76,13 +73,6 @@ export async function POST(
           : {}),
       });
     });
-
-    // Masa token'ını rotate et — eski bağlantılar geçersiz olur
-    if (masaId) {
-      await db
-        .doc(`restoranlar/${R}/masalar/${masaId}`)
-        .update({ token: uretMasaToken() });
-    }
 
     return Response.json({
       ok: true,

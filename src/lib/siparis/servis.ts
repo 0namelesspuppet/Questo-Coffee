@@ -68,7 +68,7 @@ const restoranId = (): string => {
 };
 
 /**
- * Müşteri siparişini transaction içinde yazar.
+ * Siparişi transaction içinde yazar (kasiyer/garson).
  *
  * Güvenlik garantileri:
  * - İstemciden gelen fiyat YOKSAYILIR; fiyatlar Firestore'dan okunur.
@@ -148,16 +148,12 @@ export const siparisYaz = async (
     }
 
     // ── 3) Diğer okumalar (yazılardan önce HEPSİ) ──────────────────────
-    const masaQ = masalarRef
-      .where('token', '==', istek.masaToken)
-      .where('aktifMi', '==', true)
-      .limit(1);
-    const masaSnap = await tx.get(masaQ);
-    if (masaSnap.empty) {
+    const masaRef = masalarRef.doc(istek.masaId);
+    const masaSnap = await tx.get(masaRef);
+    if (!masaSnap.exists || masaSnap.data()?.aktifMi !== true) {
       throw new AppError('masa_yok', 'Masa bulunamadı veya pasif.', 404);
     }
-    const masaDoc = masaSnap.docs[0]!;
-    const masaId = masaDoc.id;
+    const masaId = masaSnap.id;
 
     const acikQ = adisyonlarRef
       .where('masaId', '==', masaId)

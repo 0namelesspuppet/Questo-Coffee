@@ -5,9 +5,8 @@ import { SiparisIstegi } from '@/lib/utils/zod-semalar';
 
 export const runtime = 'nodejs';
 
-// Garson siparis girisi — kasiyer auth ile, rate limit atlanir.
-// /api/siparis (musteri) ile aynı validasyondan gecer; tek fark
-// uid'in kasiyer olmasi ve rate limit'in by-pass edilmesidir.
+// Garson/kasiyer siparis girisi — kasiyer auth ile, rate limit atlanir.
+// Masa, masaId ile dogrudan cozulur (token yok).
 export async function POST(req: Request) {
   try {
     const u = await apiKasiyer();

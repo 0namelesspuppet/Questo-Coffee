@@ -26,30 +26,28 @@ service cloud.firestore {
 
     match /restoranlar/{restoranId} {
 
-      // Restoran meta — public read (App Check Console'da enforce edilir)
-      allow read: if true;
+      // Restoran meta — yalnız personel okur (müşteri tarafı kaldırıldı)
+      allow read: if kasiyerMi();
       allow write: if false;
 
-      // ── Menü (public read) ──────────────────────────────────────────
+      // ── Menü — yalnız personel okur ─────────────────────────────────
       match /kategoriler/{kategoriId} {
-        allow read: if true;
+        allow read: if kasiyerMi();
         allow write: if false;
       }
 
       match /urunler/{urunId} {
-        allow read: if true;
+        allow read: if kasiyerMi();
         allow write: if false;
       }
 
-      // ── Masalar — yalnız kasiyer listeler; müşteri token→masa çözümü
-      //    server route'unda yapılır, client'tan listelenmez ─────────────
+      // ── Masalar — yalnız kasiyer listeler ───────────────────────────
       match /masalar/{masaId} {
         allow read: if kasiyerMi();
         allow write: if false;
       }
 
       // ── Adisyon ve siparişler — yalnız kasiyer canlı dinler ────────
-      //    Müşteri kendi açık adisyonunu /api/adisyon/[token] üzerinden alır.
       match /adisyonlar/{adisyonId} {
         allow read: if kasiyerMi();
         allow write: if false;

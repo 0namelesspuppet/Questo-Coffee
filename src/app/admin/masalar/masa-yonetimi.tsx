@@ -1,14 +1,7 @@
 'use client';
 
-import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import {
-  ExternalLink,
-  Pencil,
-  Plus,
-  RefreshCw,
-  Trash2,
-} from 'lucide-react';
+import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { collection, onSnapshot, query } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { getClientAuth, getClientDb } from '@/lib/firebase/client';
@@ -100,23 +93,6 @@ export function MasaYonetimi() {
     try {
       setCalisan(m.id);
       await istek(`/api/admin/masa/${m.id}`, 'PATCH', { aktifMi: aktif });
-    } catch (e) {
-      setHata(e instanceof Error ? e.message : 'Hata');
-    } finally {
-      setCalisan(null);
-    }
-  };
-
-  const rotate = async (m: Masa) => {
-    const ok = await onay({
-      baslik: `${m.ad} bağlantılarını sıfırla`,
-      mesaj: 'Aktif müşteri bağlantıları kesilir. Açık oturumlar sona erer; masa URL\'i yeniden üretilir.',
-      onayEtiket: 'Sıfırla',
-    });
-    if (!ok) return;
-    try {
-      setCalisan(m.id);
-      await istek(`/api/admin/masa/${m.id}/rotate`, 'POST');
     } catch (e) {
       setHata(e instanceof Error ? e.message : 'Hata');
     } finally {
@@ -233,9 +209,6 @@ export function MasaYonetimi() {
                 ) : (
                   <div className="font-medium">{m.ad}</div>
                 )}
-                <div className="font-mono text-xs text-muted-foreground">
-                  Token: {m.token.slice(0, 8)}…{m.token.slice(-4)}
-                </div>
               </div>
 
               <div className="flex items-center gap-1">
@@ -248,14 +221,6 @@ export function MasaYonetimi() {
                   />
                   Aktif
                 </label>
-                <Link
-                  href={`/m/${m.token}`}
-                  target="_blank"
-                  className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs"
-                >
-                  <ExternalLink className="size-3.5" />
-                  Aç
-                </Link>
                 <button
                   type="button"
                   aria-label="Adı düzenle"
@@ -266,18 +231,6 @@ export function MasaYonetimi() {
                   className="p-1.5"
                 >
                   <Pencil className="size-3.5" />
-                </button>
-                <button
-                  type="button"
-                  aria-label="Token yenile"
-                  disabled={calisiyor}
-                  onClick={() => rotate(m)}
-                  className="p-1.5 disabled:opacity-50"
-                  title="Token yenile"
-                >
-                  <RefreshCw
-                    className={cn('size-3.5', calisiyor && 'animate-spin')}
-                  />
                 </button>
                 <button
                   type="button"

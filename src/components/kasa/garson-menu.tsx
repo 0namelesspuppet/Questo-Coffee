@@ -37,11 +37,11 @@ interface SepetKalemi {
 
 interface Props {
   /** Sipariş gönderildikten sonra adisyona dönüş; verilmezse /kasa/adisyonlar/<id> */
-  masaToken: string;
+  masaId: string;
   masaAd: string;
 }
 
-export function GarsonMenu({ masaToken, masaAd }: Props) {
+export function GarsonMenu({ masaId, masaAd }: Props) {
   const router = useRouter();
   const [kategoriler, setKategoriler] = useState<Kategori[]>([]);
   const [urunler, setUrunler] = useState<Urun[]>([]);
@@ -284,7 +284,7 @@ export function GarsonMenu({ masaToken, masaAd }: Props) {
           'idempotency-key': `${Date.now()}-${Math.random().toString(36).slice(2)}`,
         },
         body: JSON.stringify({
-          masaToken,
+          masaId,
           kalemler: sepet.map((k) => ({
             urunId: k.urunId,
             adet: k.adet,

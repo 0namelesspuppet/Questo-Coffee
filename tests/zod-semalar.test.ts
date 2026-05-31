@@ -12,7 +12,7 @@ import {
 describe('SiparisIstegi şeması', () => {
   it('geçerli minimal istek doğrulanır', () => {
     const r = SiparisIstegi.parse({
-      masaToken: 'a'.repeat(22),
+      masaId: 'masa1',
       kalemler: [{ urunId: 'u1', adet: 2 }],
     });
     expect(r.kalemler).toHaveLength(1);
@@ -20,14 +20,14 @@ describe('SiparisIstegi şeması', () => {
 
   it('boş kalemler reddedilir', () => {
     expect(() =>
-      SiparisIstegi.parse({ masaToken: 'a'.repeat(22), kalemler: [] }),
+      SiparisIstegi.parse({ masaId: 'masa1', kalemler: [] }),
     ).toThrow();
   });
 
   it('adet 0 veya negatif reddedilir', () => {
     expect(() =>
       SiparisIstegi.parse({
-        masaToken: 'a'.repeat(22),
+        masaId: 'masa1',
         kalemler: [{ urunId: 'u1', adet: 0 }],
       }),
     ).toThrow();
@@ -39,14 +39,14 @@ describe('SiparisIstegi şeması', () => {
       adet: 1,
     }));
     expect(() =>
-      SiparisIstegi.parse({ masaToken: 'a'.repeat(22), kalemler }),
+      SiparisIstegi.parse({ masaId: 'masa1', kalemler }),
     ).toThrow();
   });
 
   it('notlar 200 karakterden uzun olamaz', () => {
     expect(() =>
       SiparisIstegi.parse({
-        masaToken: 'a'.repeat(22),
+        masaId: 'masa1',
         kalemler: [{ urunId: 'u1', adet: 1, notlar: 'x'.repeat(201) }],
       }),
     ).toThrow();

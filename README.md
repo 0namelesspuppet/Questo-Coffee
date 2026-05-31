@@ -30,7 +30,7 @@ ve `scripts\*.vbs` dosyaları **"güvenli olmayabilir"** diye engellenebilir
 ## Teknoloji
 
 - **Frontend:** Next.js 15 (App Router) · TypeScript (strict) · Tailwind +
-  shadcn/ui · Zustand (sepet)
+  shadcn/ui
 - **Backend:** Firebase Firestore + Auth + App Check; güvenilir mutasyonlar
   Admin SDK ile Next.js route handler'lar üzerinden
 - **Para:** Tüm tutarlar **kuruş (integer)** olarak saklanır
@@ -48,7 +48,6 @@ src/
     auth/           # session, guard, anon
     siparis/        # transactional sipariş servisi
     utils/          # para, token, zod-semalar, hata
-  stores/           # zustand sepet
   types/            # domain modelleri
 ```
 
@@ -125,7 +124,7 @@ npm test -- --run   # tek seferlik
 ```
 
 `tests/` altında 28 birim test: para format, masa token, zod şemaları,
-sayaç tarih hesabı, AppError, sepet store (masaAyarla, ekle, guncelle vb.).
+sayaç tarih hesabı, AppError, zod şemaları (SiparisIstegi vb.).
 
 ## CI
 
@@ -179,7 +178,7 @@ firebase emulators:start --only firestore,functions,auth
 - [x] Faz 0 — Konfig iskeleti
 - [x] Faz 1 — Tipler & temel altyapı
 - [x] Faz 2 — Güvenlik & rol (firestore.rules, session, middleware, kasa girişi)
-- [x] Faz 3 — Müşteri akışı (menü, sepet, sipariş transaction)
+- [x] Faz 3 — Sipariş akışı (kasiyer menü + sipariş transaction)
 - [x] Faz 4 — Kasa (Kanban, adisyon paneli, durum güncelleme)
 - [x] Faz 5 — Admin (menü/masa CRUD)
 - [x] Faz 6 — Operasyonel + Cloud Functions (SLA bildirim)

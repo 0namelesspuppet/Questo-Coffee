@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-// ── Müşteri → sipariş POST ──────────────────────────────────────────────
+// ── Kasiyer → sipariş POST ──────────────────────────────────────────────
 export const SepetSecimGirdi = z.object({
   grupId: z.string().min(1).max(64),
   secenekIds: z.array(z.string().min(1).max(64)).min(0).max(20),
@@ -14,7 +14,7 @@ export const SiparisKalemiGirdi = z.object({
 });
 
 export const SiparisIstegi = z.object({
-  masaToken: z.string().min(16).max(64),
+  masaId: z.string().min(1).max(64),
   kalemler: z.array(SiparisKalemiGirdi).min(1).max(50),
   musteriAd: z.string().trim().min(1).max(50).optional(),
 });
@@ -100,7 +100,7 @@ export const DurumGirdi = z.object({
 });
 export type DurumGirdiT = z.infer<typeof DurumGirdi>;
 
-// ── Müşteri: ayrı ödeme talebi ─────────────────────────────────────────
+// ── Ayrı ödeme talebi (kasiyer) ────────────────────────────────────────
 const OdemeTalebiKalemiGirdi = z.object({
   siparisId: z.string().min(1).max(128),
   siparisNo: z.number().int().min(1),
@@ -126,10 +126,3 @@ export const OdemeTalebiIstegi = z.discriminatedUnion('yontem', [
   }),
 ]);
 export type OdemeTalebiIstegiT = z.infer<typeof OdemeTalebiIstegi>;
-
-// Müşteri tarafı: ek olarak masaToken — adisyon-masa eşleşmesini doğrulamak için
-export const MusteriOdemeTalebiIstegi = z.intersection(
-  OdemeTalebiIstegi,
-  z.object({ masaToken: z.string().min(16).max(64) }),
-);
-export type MusteriOdemeTalebiIstegiT = z.infer<typeof MusteriOdemeTalebiIstegi>;
