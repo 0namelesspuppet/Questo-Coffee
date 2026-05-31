@@ -1,8 +1,8 @@
 # Questo — Restoran Sipariş ve Adisyon Sistemi
 
-Tek restoran için, masaya gelen müşterinin mobil tarayıcıdan menüye ulaşıp
-sipariş verdiği, kasanın canlı olarak takip edip kapattığı yerel ağ
-(LAN-only) sistemi. İnternet bağlantısı gerektirmez — Firebase emulator
+Tek restoran için, garson ve kasiyerin masalardan sipariş alıp adisyon ve
+ödemeleri canlı yönettiği yerel ağ (LAN-only) personel POS sistemi.
+İnternet bağlantısı gerektirmez — Firebase emulator
 restoranın PC'sinde çalışır, telefon/tabletler aynı WiFi üzerinden bağlanır.
 
 ## İndirdikten Sonra (Windows — Önemli)
