@@ -24,6 +24,13 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // ── Idempotency kayıtları — yalnız sunucu (Admin SDK) ──────────────
+    // Eşleşmeyen yol zaten reddedilir; sunucu-only niyetini açıkça belgeler.
+    // expireAt alanı için Firestore TTL ile 24 saatte otomatik silinir.
+    match /idempotency/{anahtar} {
+      allow read, write: if false;
+    }
+
     match /restoranlar/{restoranId} {
 
       // Restoran meta — yalnız personel okur (müşteri tarafı kaldırıldı)
