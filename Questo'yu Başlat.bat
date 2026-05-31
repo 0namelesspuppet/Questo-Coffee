@@ -78,11 +78,6 @@ if errorlevel 1 (
     exit /b 1
 )
 
-rem [+] Uzaktan erisim: Tailscale kuruluysa HTTP erisim adresini bildirir (emulator
-rem      HTTP konustugu icin HTTPS DEGIL). Kurulu degilse sessizce gecer.
-echo   [+]   Uzaktan erisim (Tailscale) kontrol ediliyor...
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\tailscale-yayinla.ps1" >> "%LOG%\tailscale.log" 2>&1
-
 rem Tarayiciyi ac - Chrome onceligi, Edge fallback, son care: shell URL handler
 set "TARAYICI=?"
 set "CHROME_X64=%ProgramFiles%\Google\Chrome\Application\chrome.exe"
