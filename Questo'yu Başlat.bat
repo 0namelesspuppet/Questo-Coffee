@@ -31,7 +31,7 @@ powershell -NoProfile -Command "Get-CimInstance Win32_Process -Filter \"Name='po
 
 rem Logs klasoru + eski logu temizle
 if not exist "%LOG%" mkdir "%LOG%"
-for %%f in (emulator.log nextjs.log seed.log yedek.log) do (
+for %%f in (emulator.log nextjs.log seed.log yedek.log tailscale.log) do (
     if exist "%LOG%\%%f" del /q "%LOG%\%%f"
 )
 
@@ -77,6 +77,11 @@ if errorlevel 1 (
     pause
     exit /b 1
 )
+
+rem [+] Uzaktan erisim: Tailscale kuruluysa siteyi HTTPS olarak tailnet'e yayinla.
+rem      Kurulu degilse script sessizce cikar — yerel ag erisimi normal calisir.
+echo   [+]   Uzaktan erisim (Tailscale) kontrol ediliyor...
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\tailscale-yayinla.ps1" >> "%LOG%\tailscale.log" 2>&1
 
 rem Tarayiciyi ac - Chrome onceligi, Edge fallback, son care: shell URL handler
 set "TARAYICI=?"
