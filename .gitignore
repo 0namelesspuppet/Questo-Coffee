@@ -28,11 +28,5 @@ service-account*.json
 logs/
 questo.log
 
-# IDE (JetBrains / Android Studio) — kişisel ayarlar
+# IDE (JetBrains) — kişisel ayarlar
 .idea/
-
-# Yerel SQLite veritabanı
-data/
-
-# Capacitor android wrapper — yerel üretilir (`npx cap add android`)
-android/
