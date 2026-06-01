@@ -308,6 +308,9 @@ export function GarsonMenu({ masaId, masaAd }: Props) {
       // Sipariş alındıktan sonra garsonu masaların listelendiği sekmeye geri
       // götür — böylece sıradaki masaya hızlıca geçebilir.
       router.replace('/kasa/masalar');
+      // Router cache'ini boşalt ki masalar sayfası yeni adisyon/siparişle güncel
+      // gelsin — yoksa sekme elle yenilenene kadar eski veri görünür.
+      router.refresh();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Sipariş hatası.');
     } finally {
