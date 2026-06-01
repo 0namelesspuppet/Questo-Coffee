@@ -403,7 +403,8 @@
 
 /* Ekranda yalnız baskıda görünecek belge öğeleri gizli durur */
 .belge-baslik,
-.belge-ozet {
+.belge-ozet,
+.belge-dipnot {
   display: none;
 }
 

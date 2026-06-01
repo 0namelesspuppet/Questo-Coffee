@@ -8,6 +8,7 @@ import { YazdirButton } from './yazdir-btn';
 import { RaporSiparisListesi, type RaporSiparis } from './siparis-listesi';
 import { RaporTarihGezgini, type GunSecenek } from './tarih-gezgini';
 import { RaporSifirlaBtn } from './rapor-sifirla-btn';
+import { BelgeDipnot } from './belge-dipnot';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -266,7 +267,16 @@ export default async function RaporSayfasi({ searchParams }: Props) {
           <h1 className="text-2xl font-semibold">Günlük Rapor</h1>
           <div className="flex flex-wrap items-center gap-2">
             <YazdirButton />
-            <RaporSifirlaBtn tarih={seciliTarih} haricVar={haricSayisi > 0} />
+            <RaporSifirlaBtn
+              tarih={seciliTarih}
+              haricVar={haricSayisi > 0}
+              hedefler={gunSiparisListesi
+                .filter((s) => s.adisyonId && s.siparisId)
+                .map((s) => ({
+                  adisyonId: s.adisyonId,
+                  siparisId: s.siparisId,
+                }))}
+            />
           </div>
         </div>
 
@@ -473,10 +483,8 @@ export default async function RaporSayfasi({ searchParams }: Props) {
         </Link>
       </p>
 
-      {/* Baskıya özel dipnot (ekranda gizli) */}
-      <div className="belge-dipnot">
-        {restoranAd} · Bu belge {istFmt({ dateStyle: 'long', timeStyle: 'short' }).format(new Date())} tarihinde Questo tarafından oluşturulmuştur.
-      </div>
+      {/* Baskıya özel dipnot (ekranda gizli) — zaman baskı anında üretilir */}
+      <BelgeDipnot restoranAd={restoranAd} />
     </div>
   );
 }

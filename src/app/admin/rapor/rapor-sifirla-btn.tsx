@@ -14,9 +14,12 @@ import { useOnay } from '@/components/ortak/onay-dialog';
 export function RaporSifirlaBtn({
   tarih,
   haricVar,
+  hedefler,
 }: {
   tarih: string;
   haricVar: boolean;
+  /** Rapor sayfasının o an gösterdiği günün siparişleri (adisyonId+siparisId). */
+  hedefler: { adisyonId: string; siparisId: string }[];
 }) {
   const onay = useOnay();
   const router = useRouter();
@@ -39,7 +42,7 @@ export function RaporSifirlaBtn({
       const res = await fetch('/api/admin/rapor-sifirla', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ tarih, haric }),
+        body: JSON.stringify({ tarih, haric, hedefler }),
       });
       if (!res.ok) {
         const j = (await res.json().catch(() => ({}))) as { mesaj?: string };
