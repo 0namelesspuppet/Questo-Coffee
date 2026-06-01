@@ -20,16 +20,31 @@ param([switch]$Kaldir)
 
 $ErrorActionPreference = 'Stop'
 
-# Proje koku (scripts/ bir ust) ve hedef .bat dosyasi
+# Proje koku (scripts/ bir ust)
 $kok = Split-Path -Parent $PSScriptRoot
-# Oncelik: yonetim menusu; yoksa dogrudan baslatma .bat'i
-$bat = Join-Path $kok 'Questo Yonetim.bat'
-if (-not (Test-Path $bat)) {
+
+# Kisayol hedefi - oncelik sirasi:
+#   1) Tiklanabilir GUI penceresi (wscript ile gizli baslatici .vbs uzerinden)
+#   2) CMD yonetim menusu (Questo Yonetim.bat)
+#   3) Dogrudan baslatma .bat'i
+$guiVbs = Join-Path $kok 'scripts\yonetim-baslat.vbs'
+$menuBat = Join-Path $kok 'Questo Yonetim.bat'
+$hedef = $null
+$arg = ''
+if (Test-Path $guiVbs) {
+    $hedef = Join-Path $env:SystemRoot 'System32\wscript.exe'
+    $arg = '"' + $guiVbs + '"'
+    $aciklama = 'Questo GUI penceresi (tiklanabilir Baslat/Durdur/Durum)'
+} elseif (Test-Path $menuBat) {
+    $hedef = $menuBat
+    $aciklama = 'Questo yonetim menusu'
+} else {
     # Dosya adi Turkce 's' (Baslat'taki) icerebilir - gercek dosyayi bul.
-    $bat = (Get-ChildItem -Path $kok -Filter '*Ba*lat.bat' -File | Select-Object -First 1).FullName
+    $hedef = (Get-ChildItem -Path $kok -Filter '*Ba*lat.bat' -File | Select-Object -First 1).FullName
+    $aciklama = 'Questo sistemini baslat'
 }
-if (-not $bat -or -not (Test-Path $bat)) {
-    Write-Error "Hedef .bat dosyasi bulunamadi: $kok"
+if (-not $hedef -or -not (Test-Path $hedef)) {
+    Write-Error "Kisayol hedefi bulunamadi: $kok"
     Start-Sleep -Seconds 6
     exit 1
 }
@@ -53,21 +68,22 @@ if ($Kaldir) {
 # --- Olusturma ---
 $ws = New-Object -ComObject WScript.Shell
 $sc = $ws.CreateShortcut($lnk)
-$sc.TargetPath = $bat
+$sc.TargetPath = $hedef
+if ($arg) { $sc.Arguments = $arg }
 $sc.WorkingDirectory = $kok
 $sc.WindowStyle = 1
-$sc.Description = 'Questo sistemini baslat'
-# Logo varsa kisayol ikonu yap (ico/exe/dll yoksa varsayilan bat ikonu kalir)
+$sc.Description = $aciklama
+# Logo varsa kisayol ikonu yap (ico/exe/dll yoksa varsayilan ikon kalir)
 $ico = Join-Path $kok 'public\logo.ico'
 if (Test-Path $ico) { $sc.IconLocation = $ico }
 $sc.Save()
 
 Write-Host ""
 Write-Host "[+] Kisayol olusturuldu: $lnk"
-Write-Host "    Hedef : $bat"
+Write-Host "    Hedef : $hedef $arg"
 Write-Host ""
 Write-Host "    Artik masaustundeki 'Questo' kisayoluna cift tiklayarak,"
-Write-Host "    klasore girmeden Baslat/Durdur menusunu acabilirsiniz."
+Write-Host "    klasore girmeden tiklanabilir yonetim penceresini acabilirsiniz."
 Write-Host ""
 Write-Host "    Kaldirmak icin: scripts\kisayol-olustur.ps1 -Kaldir"
 Write-Host ""
