@@ -124,12 +124,22 @@ export function GarsonMenu({ masaId, masaAd }: Props) {
   // Bölüm referansları — scroll-spy ve smooth scroll için
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
   const chipBarRef = useRef<HTMLElement | null>(null);
+  // Chip'e tıklayınca başlayan programatik kaydırma sırasında scroll-spy'ı sustur
+  // — yoksa observer ara bölümleri "aktif" yapıp hedefe gidişi bozabilir.
+  const programatikKaydirma = useRef(false);
+  const kaydirmaZaman = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Kategori chip'ine tıklayınca o bölüme smooth scroll
   const kategoriyeGit = (id: string) => {
     setAktifKategoriId(id);
     const el = sectionRefs.current[id];
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (!el) return;
+    programatikKaydirma.current = true;
+    if (kaydirmaZaman.current) clearTimeout(kaydirmaZaman.current);
+    kaydirmaZaman.current = setTimeout(() => {
+      programatikKaydirma.current = false;
+    }, 600);
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   // Scroll-spy: görünür bölümün chip'ini aktif yap
@@ -137,6 +147,7 @@ export function GarsonMenu({ masaId, masaAd }: Props) {
     if (aramaAktif) return;
     const observer = new IntersectionObserver(
       (entries) => {
+        if (programatikKaydirma.current) return;
         const top = entries
           .filter((e) => e.isIntersecting)
           .sort(
@@ -159,19 +170,18 @@ export function GarsonMenu({ masaId, masaAd }: Props) {
     return () => observer.disconnect();
   }, [kategoriler, aramaAktif]);
 
-  // Aktif chip'i yatay bar içinde görünür yap
+  // Aktif chip'i yatay bar içinde ortala — sadece bar'ı yatay kaydır, sayfayı
+  // dikey kaydırma (scrollIntoView gibi) ki bölüme yapılan kaydırmayı iptal etmesin.
   useEffect(() => {
     if (!aktifKategoriId || !chipBarRef.current) return;
-    const chip = chipBarRef.current.querySelector<HTMLElement>(
+    const bar = chipBarRef.current;
+    const chip = bar.querySelector<HTMLElement>(
       `[data-chip-id="${aktifKategoriId}"]`,
     );
-    if (chip) {
-      chip.scrollIntoView({
-        behavior: 'smooth',
-        inline: 'center',
-        block: 'nearest',
-      });
-    }
+    if (!chip) return;
+    const hedef =
+      chip.offsetLeft - bar.clientWidth / 2 + chip.clientWidth / 2;
+    bar.scrollTo({ left: hedef, behavior: 'smooth' });
   }, [aktifKategoriId]);
 
 
