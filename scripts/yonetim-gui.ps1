@@ -24,16 +24,6 @@ $cArka   = [System.Drawing.Color]::FromArgb(24, 24, 27)
 $cKart   = [System.Drawing.Color]::FromArgb(39, 39, 42)
 $cYazi   = [System.Drawing.Color]::FromArgb(244, 244, 245)
 
-# --- Port kontrol (kisa zaman asimi ile, takilmasin) ---
-function PortAcik($port) {
-  $c = New-Object Net.Sockets.TcpClient
-  try {
-    $iar = $c.BeginConnect('127.0.0.1', [int]$port, $null, $null)
-    if ($iar.AsyncWaitHandle.WaitOne(350) -and $c.Connected) { return $true }
-    return $false
-  } catch { return $false } finally { $c.Close() }
-}
-
 # --- Form ---
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "Questo Yonetim"
@@ -113,30 +103,55 @@ foreach ($s in $servisler) {
   $y += 52
 }
 
-# --- Durumu tazele ---
-function Tazele {
+# --- Asenkron port kontrol (UI thread'ini KILITLEMEZ) ---
+# Eski surum her tikte WaitOne(350) ile UI thread'ini ~1 sn'ye kadar bloke
+# ediyordu; pencere suruklenirken tam o anda donup takiliyordu. Artik
+# BeginConnect ile baglantilar baslatilir ve bir SONRAKI tikte WaitOne
+# YAPILMADAN IsCompleted/EndConnect ile okunur. Boylece her tik anliktir.
+$script:baglantilar = @()
+
+# Onceki tikte baslatilan baglantilarin sonucunu (bloke etmeden) oku.
+function SonuclariOku {
+  if ($script:baglantilar.Count -eq 0) { return }
   $acikSayisi = 0
-  foreach ($r in $rozetler) {
-    if (PortAcik $r.port) {
-      $r.rozet.Text = "CALISIYOR"
-      $r.rozet.BackColor = $cYesil
-      $acikSayisi++
+  foreach ($b in $script:baglantilar) {
+    $acik = $false
+    try {
+      if ($b.iar -and $b.iar.IsCompleted) {
+        $b.client.EndConnect($b.iar)   # acik degilse exception firlatir
+        $acik = $b.client.Connected
+      }
+    } catch { $acik = $false } finally { $b.client.Close() }
+    if ($acik) {
+      $b.rozet.Text = "CALISIYOR"; $b.rozet.BackColor = $cYesil; $acikSayisi++
     } else {
-      $r.rozet.Text = "KAPALI"
-      $r.rozet.BackColor = $cKirmizi
+      $b.rozet.Text = "KAPALI"; $b.rozet.BackColor = $cKirmizi
     }
   }
-  if ($acikSayisi -eq $rozetler.Count) {
-    $genel.Text = "SISTEM CALISIYOR"
-    $genel.BackColor = $cYesil
+  if ($acikSayisi -eq $script:baglantilar.Count) {
+    $genel.Text = "SISTEM CALISIYOR"; $genel.BackColor = $cYesil
   } elseif ($acikSayisi -eq 0) {
-    $genel.Text = "SISTEM KAPALI"
-    $genel.BackColor = $cKirmizi
+    $genel.Text = "SISTEM KAPALI"; $genel.BackColor = $cKirmizi
   } else {
-    $genel.Text = "KISMEN CALISIYOR ($acikSayisi/$($rozetler.Count))"
+    $genel.Text = "KISMEN CALISIYOR ($acikSayisi/$($script:baglantilar.Count))"
     $genel.BackColor = $cTuruncu
   }
 }
+
+# Yeni (asenkron) baglantilari baslat — UI thread'i beklemez.
+function KontrolBaslat {
+  $yeni = @()
+  foreach ($r in $rozetler) {
+    $c = New-Object Net.Sockets.TcpClient
+    $iar = $null
+    try { $iar = $c.BeginConnect('127.0.0.1', [int]$r.port, $null, $null) } catch {}
+    $yeni += @{ client = $c; iar = $iar; rozet = $r.rozet }
+  }
+  $script:baglantilar = $yeni
+}
+
+# Bir tik: once onceki sonucu oku, sonra yeni kontrolu baslat.
+function Tazele { SonuclariOku; KontrolBaslat }
 
 # --- Buton uretici ---
 function Buton($metin, $x, $w, $renk) {
