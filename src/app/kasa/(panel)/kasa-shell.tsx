@@ -25,8 +25,8 @@ interface NavItem {
 }
 
 const NAV: NavItem[] = [
+  { yol: '/kasa/masalar', etiket: 'Masalar', altYollar: ['/kasa/masa'] },
   { yol: '/kasa/adisyonlar', etiket: 'Adisyonlar' },
-  { yol: '/kasa/masalar', etiket: 'Kasa', altYollar: ['/kasa/masa'] },
   { yol: '/admin/rapor', etiket: 'Rapor', sahipGerek: true },
   {
     yol: '/admin/ayarlar',
