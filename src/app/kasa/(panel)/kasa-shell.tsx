@@ -16,16 +16,30 @@ interface Props {
   children: React.ReactNode;
 }
 
-const NAV = [
+interface NavItem {
+  yol: string;
+  etiket: string;
+  sahipGerek?: boolean;
+  /** Bu sekmeyi aktif sayan ek yollar (alt sayfalar/ilgili akışlar). */
+  altYollar?: string[];
+}
+
+const NAV: NavItem[] = [
   { yol: '/kasa/adisyonlar', etiket: 'Adisyonlar' },
-  { yol: '/admin/menu', etiket: 'Menü', sahipGerek: true },
-  { yol: '/admin/masalar', etiket: 'Masalar', sahipGerek: true },
+  { yol: '/kasa/masalar', etiket: 'Kasa', altYollar: ['/kasa/masa'] },
   { yol: '/admin/rapor', etiket: 'Rapor', sahipGerek: true },
-  { yol: '/admin/ayarlar', etiket: 'Ayarlar', sahipGerek: true },
+  {
+    yol: '/admin/ayarlar',
+    etiket: 'Ayarlar',
+    sahipGerek: true,
+    altYollar: ['/admin/menu', '/admin/masalar'],
+  },
 ];
 
-const aktifMi = (mevcut: string, linkYol: string) =>
-  mevcut === linkYol || mevcut.startsWith(linkYol + '/');
+const aktifMi = (mevcut: string, n: NavItem) =>
+  [n.yol, ...(n.altYollar ?? [])].some(
+    (y) => mevcut === y || mevcut.startsWith(y + '/'),
+  );
 
 export function KasaShell({ kullanici, children }: Props) {
   const yol = usePathname();
@@ -76,7 +90,7 @@ export function KasaShell({ kullanici, children }: Props) {
                   href={n.yol}
                   className={cn(
                     'rounded-md px-2.5 py-1',
-                    aktifMi(yol, n.yol)
+                    aktifMi(yol, n)
                       ? 'bg-secondary text-secondary-foreground'
                       : 'text-muted-foreground hover:text-foreground',
                   )}
@@ -108,7 +122,7 @@ export function KasaShell({ kullanici, children }: Props) {
                 onClick={() => setMenuAcik(false)}
                 className={cn(
                   'rounded-md px-3 py-2',
-                  aktifMi(yol, n.yol)
+                  aktifMi(yol, n)
                     ? 'bg-secondary text-secondary-foreground'
                     : 'text-muted-foreground hover:text-foreground',
                 )}

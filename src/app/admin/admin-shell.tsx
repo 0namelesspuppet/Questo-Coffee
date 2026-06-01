@@ -10,16 +10,28 @@ import { getClientAuth } from '@/lib/firebase/client';
 import { otoGirisYap } from '@/lib/auth/oto-giris-client';
 import { cn } from '@/lib/utils';
 
-const NAV = [
+interface NavItem {
+  yol: string;
+  etiket: string;
+  /** Bu sekmeyi aktif sayan ek yollar (alt sayfalar/ilgili akışlar). */
+  altYollar?: string[];
+}
+
+const NAV: NavItem[] = [
   { yol: '/kasa/adisyonlar', etiket: 'Adisyonlar' },
-  { yol: '/admin/menu', etiket: 'Menü' },
-  { yol: '/admin/masalar', etiket: 'Masalar' },
+  { yol: '/kasa/masalar', etiket: 'Kasa', altYollar: ['/kasa/masa'] },
   { yol: '/admin/rapor', etiket: 'Rapor' },
-  { yol: '/admin/ayarlar', etiket: 'Ayarlar' },
+  {
+    yol: '/admin/ayarlar',
+    etiket: 'Ayarlar',
+    altYollar: ['/admin/menu', '/admin/masalar'],
+  },
 ];
 
-const aktifMi = (mevcut: string, linkYol: string) =>
-  mevcut === linkYol || mevcut.startsWith(linkYol + '/');
+const aktifMi = (mevcut: string, n: NavItem) =>
+  [n.yol, ...(n.altYollar ?? [])].some(
+    (y) => mevcut === y || mevcut.startsWith(y + '/'),
+  );
 
 export function AdminShell({
   children,
@@ -69,7 +81,7 @@ export function AdminShell({
                   href={n.yol}
                   className={cn(
                     'rounded-md px-2.5 py-1',
-                    aktifMi(yol, n.yol)
+                    aktifMi(yol, n)
                       ? 'bg-secondary text-secondary-foreground'
                       : 'text-muted-foreground hover:text-foreground',
                   )}
@@ -100,7 +112,7 @@ export function AdminShell({
                 onClick={() => setMenuAcik(false)}
                 className={cn(
                   'rounded-md px-3 py-2',
-                  aktifMi(yol, n.yol)
+                  aktifMi(yol, n)
                     ? 'bg-secondary text-secondary-foreground'
                     : 'text-muted-foreground hover:text-foreground',
                 )}
