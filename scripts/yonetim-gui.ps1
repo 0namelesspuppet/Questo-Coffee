@@ -1,5 +1,5 @@
 # Questo Yonetim - tiklanabilir pencere (WinForms).
-# Baslat / Durdur / Yenile / Loglar butonlari + her servis icin renkli durum.
+# Genel durum belirteci + Baslat / Durdur / Durumu yenile / Yeniden baslat.
 # Durum 2.5 sn'de bir otomatik yenilenir. Ek kurulum gerektirmez (Windows'ta
 # yerlesik .NET WinForms kullanir). Gizli baslatici: scripts\yonetim-baslat.vbs
 
@@ -27,7 +27,7 @@ $cYazi   = [System.Drawing.Color]::FromArgb(244, 244, 245)
 # --- Form ---
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "Questo Yonetim"
-$form.Size = New-Object System.Drawing.Size(400, 430)
+$form.Size = New-Object System.Drawing.Size(400, 300)
 $form.StartPosition = 'CenterScreen'
 $form.FormBorderStyle = 'FixedDialog'
 $form.MaximizeBox = $false
@@ -56,56 +56,21 @@ $baslik.Size = New-Object System.Drawing.Size(360, 34)
 $baslik.TextAlign = 'MiddleCenter'
 $form.Controls.Add($baslik)
 
-# Genel durum rozeti
+# Genel durum belirteci
 $genel = New-Object System.Windows.Forms.Label
 $genel.Text = "Kontrol ediliyor..."
 $genel.ForeColor = [System.Drawing.Color]::White
 $genel.BackColor = $cTuruncu
 $genel.Font = New-Object System.Drawing.Font("Segoe UI", 12, [System.Drawing.FontStyle]::Bold)
 $genel.Location = New-Object System.Drawing.Point(20, 56)
-$genel.Size = New-Object System.Drawing.Size(360, 40)
+$genel.Size = New-Object System.Drawing.Size(360, 44)
 $genel.TextAlign = 'MiddleCenter'
 $form.Controls.Add($genel)
 
-# Servis satirlari: ad + durum rozeti
-$servisler = @(
-  @{ ad = "Uygulama (Next.js)"; port = 3000 },
-  @{ ad = "Firestore (veritabani)"; port = 8080 },
-  @{ ad = "Auth (giris)"; port = 9099 }
-)
-$rozetler = @()
-$y = 112
-foreach ($s in $servisler) {
-  $kart = New-Object System.Windows.Forms.Panel
-  $kart.Location = New-Object System.Drawing.Point(20, $y)
-  $kart.Size = New-Object System.Drawing.Size(360, 44)
-  $kart.BackColor = $cKart
-  $form.Controls.Add($kart)
-
-  $ad = New-Object System.Windows.Forms.Label
-  $ad.Text = $s.ad
-  $ad.ForeColor = $cYazi
-  $ad.Location = New-Object System.Drawing.Point(12, 12)
-  $ad.Size = New-Object System.Drawing.Size(210, 22)
-  $kart.Controls.Add($ad)
-
-  $rozet = New-Object System.Windows.Forms.Label
-  $rozet.Text = "..."
-  $rozet.ForeColor = [System.Drawing.Color]::White
-  $rozet.BackColor = $cTuruncu
-  $rozet.Font = New-Object System.Drawing.Font("Segoe UI", 9, [System.Drawing.FontStyle]::Bold)
-  $rozet.Location = New-Object System.Drawing.Point(232, 8)
-  $rozet.Size = New-Object System.Drawing.Size(116, 28)
-  $rozet.TextAlign = 'MiddleCenter'
-  $kart.Controls.Add($rozet)
-
-  $rozetler += @{ rozet = $rozet; port = $s.port }
-  $y += 52
-}
+# Durum icin izlenen portlar (UI'da satir gosterilmez, sadece genel durumu belirler)
+$portlar = @(3000, 8080, 9099)
 
 # --- Asenkron port kontrol (UI thread'ini KILITLEMEZ) ---
-# Eski surum her tikte WaitOne(350) ile UI thread'ini ~1 sn'ye kadar bloke
-# ediyordu; pencere suruklenirken tam o anda donup takiliyordu. Artik
 # BeginConnect ile baglantilar baslatilir ve bir SONRAKI tikte WaitOne
 # YAPILMADAN IsCompleted/EndConnect ile okunur. Boylece her tik anliktir.
 $script:baglantilar = @()
@@ -122,11 +87,7 @@ function SonuclariOku {
         $acik = $b.client.Connected
       }
     } catch { $acik = $false } finally { $b.client.Close() }
-    if ($acik) {
-      $b.rozet.Text = "CALISIYOR"; $b.rozet.BackColor = $cYesil; $acikSayisi++
-    } else {
-      $b.rozet.Text = "KAPALI"; $b.rozet.BackColor = $cKirmizi
-    }
+    if ($acik) { $acikSayisi++ }
   }
   if ($acikSayisi -eq $script:baglantilar.Count) {
     $genel.Text = "SISTEM CALISIYOR"; $genel.BackColor = $cYesil
@@ -141,11 +102,11 @@ function SonuclariOku {
 # Yeni (asenkron) baglantilari baslat — UI thread'i beklemez.
 function KontrolBaslat {
   $yeni = @()
-  foreach ($r in $rozetler) {
+  foreach ($p in $portlar) {
     $c = New-Object Net.Sockets.TcpClient
     $iar = $null
-    try { $iar = $c.BeginConnect('127.0.0.1', [int]$r.port, $null, $null) } catch {}
-    $yeni += @{ client = $c; iar = $iar; rozet = $r.rozet }
+    try { $iar = $c.BeginConnect('127.0.0.1', [int]$p, $null, $null) } catch {}
+    $yeni += @{ client = $c; iar = $iar }
   }
   $script:baglantilar = $yeni
 }
@@ -157,7 +118,7 @@ function Tazele { SonuclariOku; KontrolBaslat }
 function Buton($metin, $x, $w, $renk) {
   $b = New-Object System.Windows.Forms.Button
   $b.Text = $metin
-  $b.Location = New-Object System.Drawing.Point($x, 282)
+  $b.Location = New-Object System.Drawing.Point($x, 116)
   $b.Size = New-Object System.Drawing.Size($w, 52)
   $b.FlatStyle = 'Flat'
   $b.FlatAppearance.BorderSize = 0
@@ -192,10 +153,10 @@ $btnDurdur.Add_Click({
   $genel.BackColor = $cTuruncu
 })
 
-# Alt satir: Yenile + Loglar
+# Alt satir: Durumu yenile + Yeniden baslat
 $btnYenile = New-Object System.Windows.Forms.Button
 $btnYenile.Text = "Durumu yenile"
-$btnYenile.Location = New-Object System.Drawing.Point(20, 346)
+$btnYenile.Location = New-Object System.Drawing.Point(20, 180)
 $btnYenile.Size = New-Object System.Drawing.Size(172, 38)
 $btnYenile.FlatStyle = 'Flat'
 $btnYenile.FlatAppearance.BorderSize = 1
@@ -205,21 +166,27 @@ $btnYenile.Cursor = [System.Windows.Forms.Cursors]::Hand
 $btnYenile.Add_Click({ Tazele })
 $form.Controls.Add($btnYenile)
 
-$btnLog = New-Object System.Windows.Forms.Button
-$btnLog.Text = "Loglar"
-$btnLog.Location = New-Object System.Drawing.Point(208, 346)
-$btnLog.Size = New-Object System.Drawing.Size(172, 38)
-$btnLog.FlatStyle = 'Flat'
-$btnLog.FlatAppearance.BorderSize = 1
-$btnLog.ForeColor = $cYazi
-$btnLog.BackColor = $cKart
-$btnLog.Cursor = [System.Windows.Forms.Cursors]::Hand
-$btnLog.Add_Click({
-  $logDir = Join-Path $kok 'logs'
-  if (Test-Path $logDir) { Start-Process explorer $logDir }
-  else { [System.Windows.Forms.MessageBox]::Show("Henuz log klasoru yok.", "Questo") | Out-Null }
+$btnYeniden = New-Object System.Windows.Forms.Button
+$btnYeniden.Text = "Yeniden baslat"
+$btnYeniden.Location = New-Object System.Drawing.Point(208, 180)
+$btnYeniden.Size = New-Object System.Drawing.Size(172, 38)
+$btnYeniden.FlatStyle = 'Flat'
+$btnYeniden.FlatAppearance.BorderSize = 1
+$btnYeniden.ForeColor = $cYazi
+$btnYeniden.BackColor = $cKart
+$btnYeniden.Cursor = [System.Windows.Forms.Cursors]::Hand
+$btnYeniden.Add_Click({
+  if (-not $durdurBat -or -not $baslatBat) {
+    [System.Windows.Forms.MessageBox]::Show("Baslatma/durdurma .bat dosyasi bulunamadi.", "Questo") | Out-Null
+    return
+  }
+  $genel.Text = "YENIDEN BASLATILIYOR..."
+  $genel.BackColor = $cTuruncu
+  # Once durdur (bitmesini bekle), sonra yeniden baslat.
+  Start-Process -FilePath $durdurBat -WorkingDirectory $kok -Wait
+  Start-Process -FilePath $baslatBat -WorkingDirectory $kok
 })
-$form.Controls.Add($btnLog)
+$form.Controls.Add($btnYeniden)
 
 # Otomatik yenileme (canli durum)
 $timer = New-Object System.Windows.Forms.Timer
