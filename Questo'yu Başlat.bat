@@ -63,9 +63,12 @@ if errorlevel 1 (
     exit /b 1
 )
 
-rem [5/5] Demo veri yukle (emulator hazir; Next.js bu sirada zaten boot/build oluyor)
-echo   [5/5] Demo veri yukleniyor...
-call npm run seed > "%LOG%\seed.log" 2>&1
+rem [5/5] Demo veri yukle — ARKA PLANDA (kritik degil ve idempotent: menu zaten
+rem doluysa seed kendini atlar). Boylece tarayici acilisi seed'i BEKLEMEZ; ilk
+rem kurulumda veri birkac saniye icinde canli (onSnapshot) gelir. Eskiden bu adim
+rem senkron beklendigi icin her acilisa ~3-5 sn ekliyordu.
+echo   [5/5] Demo veri arka planda yukleniyor (gerekirse)...
+wscript "%~dp0scripts\gizli-calistir.vbs" "seed.log" "npm run seed"
 
 rem Next.js portunu bekle (3000) - max 180 sn (paralel build payi dahil)
 rem TEK PowerShell prosesi, 300 ms yoklama.
@@ -113,7 +116,7 @@ echo   Tarayici:   !TARAYICI!   (acilmadiysa URL'i manuel acin)
 echo   Loglar:     %LOG%\emulator.log  /  %LOG%\nextjs.log  /  %LOG%\yedek.log
 echo   Durdurmak:  Questo'yu Durdur.bat
 echo.
-echo   Bu pencere 5 saniye sonra otomatik kapanacak...
-timeout /t 5 /nobreak >nul
+echo   Bu pencere 2 saniye sonra otomatik kapanacak...
+timeout /t 2 /nobreak >nul
 endlocal
 exit /b 0

@@ -19,6 +19,9 @@ coverage
 service-account*.json
 *-firebase-adminsdk-*.json
 
+# logo.jpg'den uretilen kisayol/pencere ikonu (kisayol-olustur.ps1 uretir)
+public/logo.ico
+
 # Yerel kullanım batch dosyaları
 *.bat
 # ...ama internet engelini kaldıran yardımcı script repoda kalsın (zip'le dağıtım için)

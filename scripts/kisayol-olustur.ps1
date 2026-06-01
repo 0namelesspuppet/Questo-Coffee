@@ -23,6 +23,42 @@ $ErrorActionPreference = 'Stop'
 # Proje koku (scripts/ bir ust)
 $kok = Split-Path -Parent $PSScriptRoot
 
+# --- Logo .ico uret (yoksa) - kisayol ve pencere ikonu icin ---
+# Repoda logo.jpg var; ondan 256x256 PNG-tabanli bir .ico uretip public\logo.ico
+# olarak kaydederiz. Boylece ikon binary'sini repoda tutmaya gerek kalmaz.
+$icoYol = Join-Path $kok 'public\logo.ico'
+$jpgYol = Join-Path $kok 'public\logo.jpg'
+if ((-not (Test-Path $icoYol)) -and (Test-Path $jpgYol)) {
+    try {
+        Add-Type -AssemblyName System.Drawing
+        $img = [System.Drawing.Image]::FromFile($jpgYol)
+        $kenar = [Math]::Min($img.Width, $img.Height)
+        $bmp = New-Object System.Drawing.Bitmap 256, 256
+        $g = [System.Drawing.Graphics]::FromImage($bmp)
+        $g.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+        $kaynak = New-Object System.Drawing.Rectangle ([int](($img.Width - $kenar) / 2)), ([int](($img.Height - $kenar) / 2)), $kenar, $kenar
+        $hedefR = New-Object System.Drawing.Rectangle 0, 0, 256, 256
+        $g.DrawImage($img, $hedefR, $kaynak, [System.Drawing.GraphicsUnit]::Pixel)
+        $g.Dispose()
+        $ms = New-Object System.IO.MemoryStream
+        $bmp.Save($ms, [System.Drawing.Imaging.ImageFormat]::Png)
+        $png = $ms.ToArray()
+        $fs = [System.IO.File]::Create($icoYol)
+        $bw = New-Object System.IO.BinaryWriter $fs
+        # ICONDIR: reserved=0, type=1 (icon), count=1
+        $bw.Write([UInt16]0); $bw.Write([UInt16]1); $bw.Write([UInt16]1)
+        # ICONDIRENTRY: 256x256 -> genislik/yukseklik 0 ile kodlanir
+        $bw.Write([Byte]0); $bw.Write([Byte]0); $bw.Write([Byte]0); $bw.Write([Byte]0)
+        $bw.Write([UInt16]1); $bw.Write([UInt16]32)
+        $bw.Write([UInt32]$png.Length); $bw.Write([UInt32]22)
+        $bw.Write($png); $bw.Flush(); $fs.Close()
+        $img.Dispose(); $bmp.Dispose(); $ms.Dispose()
+        Write-Host "[+] Logo ikonu olusturuldu: $icoYol"
+    } catch {
+        Write-Host "[i] Logo ikonu uretilemedi (varsayilan ikon kullanilacak)."
+    }
+}
+
 # Kisayol hedefi - oncelik sirasi:
 #   1) Tiklanabilir GUI penceresi (wscript ile gizli baslatici .vbs uzerinden)
 #   2) CMD yonetim menusu (Questo Yonetim.bat)

@@ -44,6 +44,18 @@ $form.MaximizeBox = $false
 $form.BackColor = $cArka
 $form.Font = New-Object System.Drawing.Font("Segoe UI", 10)
 
+# Pencere ikonu - once logo.ico, yoksa logo.jpg'den uret (titlebar + gorev cubugu)
+try {
+  $icoYol = Join-Path $kok 'public\logo.ico'
+  $jpgYol = Join-Path $kok 'public\logo.jpg'
+  if (Test-Path $icoYol) {
+    $form.Icon = New-Object System.Drawing.Icon($icoYol)
+  } elseif (Test-Path $jpgYol) {
+    $logoBmp = New-Object System.Drawing.Bitmap $jpgYol
+    $form.Icon = [System.Drawing.Icon]::FromHandle($logoBmp.GetHicon())
+  }
+} catch {}
+
 # Baslik
 $baslik = New-Object System.Windows.Forms.Label
 $baslik.Text = "QUESTO"
