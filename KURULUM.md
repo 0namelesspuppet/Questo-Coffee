@@ -75,15 +75,28 @@ kur ve **bilgisayarı yeniden başlat**.
 > çalıştırmak yerine **"Bu dosyayı nasıl açmak istiyorsunuz?"** (Not Defteri
 > vb.) diye sorabilir — bu durumda hiçbir şey kurulmaz. Çözümü çok kolay:
 >
-> **Klasörün içinde boş bir yere `Shift + Sağ tık` → "Terminalde aç" / "PowerShell
-> penceresini burada aç"**, açılan pencereye şunu yapıştır ve **Enter**'a bas:
-> ```
-> Get-ChildItem -Recurse | Unblock-File
-> ```
-> Bu, klasördeki tüm dosyalardan o işareti tek seferde temizler. Artık `.bat`
-> dosyaları normal çift tıklayınca çalışır. (Bunu yapmazsan `Questo'yu Kur.bat`
-> ilk çalıştığında kalan dosyaları kendisi temizler, ama Kur.bat'ın **kendisi**
-> engellenirse açılamaz — o yüzden bu tek satırı baştan çalıştırmak en garantisi.)
+> **En kolay yol (dokunmatik / sağ tık gerektirmez) — adres çubuğu:**
+> 1. Questo klasörünü aç.
+> 2. Üstteki **adres çubuğuna** (klasör yolunun yazdığı çubuk) bir kez dokun →
+>    içi maviye dönüp yazılabilir olur.
+> 3. İçini silip şunu yaz, **Enter**:
+>    ```
+>    powershell -ExecutionPolicy Bypass -Command "gci -r | Unblock-File"
+>    ```
+> 4. Kısa bir pencere açılıp kapanır → işaret temizlendi. Artık `.bat` dosyaları
+>    çift tıklayınca normal çalışır.
+>
+> **Alternatif (masaüstü / fareyle):** Klasörde boş yere `Shift + Sağ tık →
+> "Terminalde aç"`, açılan pencereye `Get-ChildItem -Recurse | Unblock-File` yaz,
+> Enter.
+>
+> **Alternatif (tek dosya, dokunmatik):** `Questo'yu Kur.bat` üstüne parmağını
+> **basılı tut** → **Özellikler** → en altta **"Engellemeyi kaldır / Unblock"**
+> kutusunu işaretle → Tamam.
+>
+> Bu işaret temizlenince `.bat` dosyaları normal çalışır. (Yapmazsan
+> `Questo'yu Kur.bat` ilk çalıştığında kalanları kendisi temizler, ama Kur.bat'ın
+> **kendisi** engellenirse açılamaz — o yüzden baştan temizlemek en garantisi.)
 
 Sonra proje klasöründeki **`Questo'yu Kur.bat`** dosyasına çift tıkla. Bu dosya
 gerekli her şeyi **tek seferde** kendisi yapar:
