@@ -16,7 +16,7 @@
 # (sag tik > "PowerShell ile calistir" bunu kullanir) BOM'suz UTF-8'i yanlis kod
 # sayfasiyla okur; Turkce harf gibi karakterler ayristirma hatasina yol acar.
 
-param([switch]$Kaldir)
+param([switch]$Kaldir, [switch]$Menu)
 
 $ErrorActionPreference = 'Stop'
 
@@ -60,6 +60,7 @@ if ((-not (Test-Path $icoYol)) -and (Test-Path $jpgYol)) {
 }
 
 # Kisayol hedefi - oncelik sirasi:
+#   0) -Menu verildiyse: dogrudan CMD yonetim menusu (Questo Yonetim.bat)
 #   1) Tiklanabilir GUI penceresi (wscript ile gizli baslatici .vbs uzerinden)
 #   2) CMD yonetim menusu (Questo Yonetim.bat)
 #   3) Dogrudan baslatma .bat'i
@@ -67,7 +68,11 @@ $guiVbs = Join-Path $kok 'scripts\yonetim-baslat.vbs'
 $menuBat = Join-Path $kok 'Questo Yonetim.bat'
 $hedef = $null
 $arg = ''
-if (Test-Path $guiVbs) {
+if ($Menu -and (Test-Path $menuBat)) {
+    # -Menu: GUI penceresi yerine dogrudan .bat yonetim menusunu hedefle
+    $hedef = $menuBat
+    $aciklama = 'Questo yonetim menusu (Baslat / Durdur / Durum / Loglar)'
+} elseif (Test-Path $guiVbs) {
     $hedef = Join-Path $env:SystemRoot 'System32\wscript.exe'
     $arg = '"' + $guiVbs + '"'
     $aciklama = 'Questo GUI penceresi (tiklanabilir Baslat/Durdur/Durum)'
@@ -86,8 +91,10 @@ if (-not $hedef -or -not (Test-Path $hedef)) {
 }
 
 # Masaustu yolu (OneDrive yonlendirmesine de saygi duyar)
+# -Menu kisayolu ayri isimle ('Questo Yonetim') olusur; GUI kisayoluyla cakismaz.
 $masaustu = [Environment]::GetFolderPath('Desktop')
-$lnk = Join-Path $masaustu 'Questo.lnk'
+$kisayolAd = if ($Menu) { 'Questo Yonetim.lnk' } else { 'Questo.lnk' }
+$lnk = Join-Path $masaustu $kisayolAd
 
 # --- Kaldirma ---
 if ($Kaldir) {
