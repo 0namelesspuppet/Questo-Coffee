@@ -1,9 +1,10 @@
 # Questo icin Masaustune bir kisayol (.lnk) olusturur.
 #
 # Boylece proje klasorune girmeden, masaustundeki "Questo" kisayoluna cift
-# tiklayarak yonetim menusunu (Baslat / Durdur / Durum) acabilirsiniz. Kisayol
-# "Questo Yonetim.bat" dosyasini hedefler; o da klasore gecip baslat/durdur
-# .bat'larini cagirir. (Yonetim menusu yoksa dogrudan baslatma .bat'ina duser.)
+# tiklayarak tiklanabilir GUI yonetim penceresini (Baslat / Durdur / Durum /
+# Yeniden baslat) acabilirsiniz. Kisayol gizli baslatici scripts\yonetim-baslat.vbs
+# uzerinden scripts\yonetim-gui.ps1 penceresini acar. (GUI yoksa dogrudan
+# baslatma .bat'ina duser.)
 #
 # Kullanim:
 #   Olusturmak icin : sag tik > "PowerShell ile calistir"  (ya da)
@@ -16,7 +17,7 @@
 # (sag tik > "PowerShell ile calistir" bunu kullanir) BOM'suz UTF-8'i yanlis kod
 # sayfasiyla okur; Turkce harf gibi karakterler ayristirma hatasina yol acar.
 
-param([switch]$Kaldir, [switch]$Menu)
+param([switch]$Kaldir)
 
 $ErrorActionPreference = 'Stop'
 
@@ -60,25 +61,15 @@ if ((-not (Test-Path $icoYol)) -and (Test-Path $jpgYol)) {
 }
 
 # Kisayol hedefi - oncelik sirasi:
-#   0) -Menu verildiyse: dogrudan CMD yonetim menusu (Questo Yonetim.bat)
 #   1) Tiklanabilir GUI penceresi (wscript ile gizli baslatici .vbs uzerinden)
-#   2) CMD yonetim menusu (Questo Yonetim.bat)
-#   3) Dogrudan baslatma .bat'i
+#   2) GUI yoksa: dogrudan baslatma .bat'i
 $guiVbs = Join-Path $kok 'scripts\yonetim-baslat.vbs'
-$menuBat = Join-Path $kok 'Questo Yonetim.bat'
 $hedef = $null
 $arg = ''
-if ($Menu -and (Test-Path $menuBat)) {
-    # -Menu: GUI penceresi yerine dogrudan .bat yonetim menusunu hedefle
-    $hedef = $menuBat
-    $aciklama = 'Questo yonetim menusu (Baslat / Durdur / Durum / Loglar)'
-} elseif (Test-Path $guiVbs) {
+if (Test-Path $guiVbs) {
     $hedef = Join-Path $env:SystemRoot 'System32\wscript.exe'
     $arg = '"' + $guiVbs + '"'
     $aciklama = 'Questo GUI penceresi (tiklanabilir Baslat/Durdur/Durum)'
-} elseif (Test-Path $menuBat) {
-    $hedef = $menuBat
-    $aciklama = 'Questo yonetim menusu'
 } else {
     # Dosya adi Turkce 's' (Baslat'taki) icerebilir - gercek dosyayi bul.
     $hedef = (Get-ChildItem -Path $kok -Filter '*Ba*lat.bat' -File | Select-Object -First 1).FullName
@@ -93,7 +84,7 @@ if (-not $hedef -or -not (Test-Path $hedef)) {
 # Masaustu yolu (OneDrive yonlendirmesine de saygi duyar)
 # -Menu kisayolu ayri isimle ('Questo Yonetim') olusur; GUI kisayoluyla cakismaz.
 $masaustu = [Environment]::GetFolderPath('Desktop')
-$kisayolAd = if ($Menu) { 'Questo Yonetim.lnk' } else { 'Questo.lnk' }
+$kisayolAd = 'Questo Yonetim.lnk'
 $lnk = Join-Path $masaustu $kisayolAd
 
 # --- Kaldirma ---
