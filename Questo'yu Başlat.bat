@@ -39,14 +39,14 @@ rem [2/5] Emulator (gizli pencere, vbs launcher)
 echo   [2/5] Emulator baslatiliyor (gizli, log: %LOG%\emulator.log)...
 wscript "%~dp0scripts\gizli-calistir.vbs" "emulator.log" "npm run emulators"
 
-rem [3/5] Next.js'i HEMEN baslat — boot icin emulatore ihtiyaci yok. Boylece
+rem [3/5] Next.js'i HEMEN baslat - boot icin emulatore ihtiyaci yok. Boylece
 rem olasi ~30 sn build, emulator hazirligi ve seed ile PARALEL ilerler (sirayla
 rem beklemek yerine). Production'da sayfalar onceden derli => ilk tiklamalar hizli.
 echo   [3/5] Next.js baslatiliyor (production, paralel, log: %LOG%\nextjs.log)...
-echo         (kod degismisse ilk acilista ~30 sn build olabilir — arka planda)
+echo         (kod degismisse ilk acilista ~30 sn build olabilir - arka planda)
 wscript "%~dp0scripts\gizli-calistir.vbs" "nextjs.log" "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\uygulama-baslat.ps1"
 
-rem Periodic yedek scripti (15 dk'da bir export + gunluk zip) — paralel, kritik degil
+rem Periodic yedek scripti (15 dk'da bir export + gunluk zip) - paralel, kritik degil
 echo   [+]   Periodic yedek scripti baslatiliyor (log: %LOG%\yedek.log)...
 wscript "%~dp0scripts\gizli-calistir.vbs" "yedek.log" "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\yedek-periodic.ps1"
 
@@ -63,7 +63,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-rem [5/5] Demo veri yukle — ARKA PLANDA (kritik degil ve idempotent: menu zaten
+rem [5/5] Demo veri yukle - ARKA PLANDA (kritik degil ve idempotent: menu zaten
 rem doluysa seed kendini atlar). Boylece tarayici acilisi seed'i BEKLEMEZ; ilk
 rem kurulumda veri birkac saniye icinde canli (onSnapshot) gelir. Eskiden bu adim
 rem senkron beklendigi icin her acilisa ~3-5 sn ekliyordu.
