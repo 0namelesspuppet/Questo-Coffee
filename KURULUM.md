@@ -69,8 +69,24 @@ kur ve **bilgisayarı yeniden başlat**.
 
 ## Adım 3 — Kurulumu tamamla (tek tıkla)
 
-Proje klasöründeki **`Questo'yu Kur.bat`** dosyasına çift tıkla. Bu dosya gerekli
-her şeyi **tek seferde** kendisi yapar:
+> **ÖNEMLİ — önce şunu oku (yeni PC'de bir kez):**
+> Klasörü USB/MEGA/indirme ile taşıdığın için Windows dosyaları "dışarıdan
+> geldi" diye **işaretler**. Bu yüzden bir `.bat` dosyasına çift tıklayınca
+> çalıştırmak yerine **"Bu dosyayı nasıl açmak istiyorsunuz?"** (Not Defteri
+> vb.) diye sorabilir — bu durumda hiçbir şey kurulmaz. Çözümü çok kolay:
+>
+> **Klasörün içinde boş bir yere `Shift + Sağ tık` → "Terminalde aç" / "PowerShell
+> penceresini burada aç"**, açılan pencereye şunu yapıştır ve **Enter**'a bas:
+> ```
+> Get-ChildItem -Recurse | Unblock-File
+> ```
+> Bu, klasördeki tüm dosyalardan o işareti tek seferde temizler. Artık `.bat`
+> dosyaları normal çift tıklayınca çalışır. (Bunu yapmazsan `Questo'yu Kur.bat`
+> ilk çalıştığında kalan dosyaları kendisi temizler, ama Kur.bat'ın **kendisi**
+> engellenirse açılamaz — o yüzden bu tek satırı baştan çalıştırmak en garantisi.)
+
+Sonra proje klasöründeki **`Questo'yu Kur.bat`** dosyasına çift tıkla. Bu dosya
+gerekli her şeyi **tek seferde** kendisi yapar:
 
 - Node.js ve Java kurulu mu kontrol eder (eksikse indirme sayfasını açar),
 - Firebase CLI yoksa otomatik kurar,
@@ -162,6 +178,8 @@ sistemin kendiliğinden kalkmasını istersen:
 | Bilgisayar adıyla açılmıyor | `ipconfig` ile yerel IP'yi öğren, `http://192.168.x.x:3000` ile dene. |
 | Veri görünmüyor | Eski ve yeni PC'de `.env.local` içindeki `NEXT_PUBLIC_RESTORAN_ID` **aynı** olmalı (varsayılan: `questo`). |
 | PC kapalıyken çalışmıyor | Normaldir — PC sunucudur, **açık olmalı**. |
+| `.bat`'a çift tıklayınca "nasıl açayım / Not Defteri" soruyor | Dosya "dışarıdan geldi" işaretli. Klasörde `Shift + Sağ tık → Terminalde aç`, şunu çalıştır: `Get-ChildItem -Recurse \| Unblock-File`. Sonra tekrar çift tıkla. (Bkz. Adım 3 üstündeki kutu.) |
+| Build sırasında "An Application Control policy has blocked this file" yazıyor | **Sorun değil.** Windows "Akıllı Uygulama Denetimi" Next.js yerel motorunu engelliyor; sistem otomatik WASM motoruna geçip derlemeyi tamamlar (sadece biraz yavaş). Kurulum yine başarılı olur. |
 
 ---
 
