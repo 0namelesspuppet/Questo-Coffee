@@ -64,20 +64,36 @@ kur ve **bilgisayarı yeniden başlat**.
 ### Yeni PC'de:
 
 4. Klasörü istediğin yere yapıştır (ör. Masaüstü).
-5. Klasörün **içine gir**, boş bir yere `Shift + Sağ tık` → "Terminalde aç" veya
-   "PowerShell penceresini burada aç".
-6. Şu komutu yaz, Enter:
-   ```
-   npm install
-   ```
-   Bu, silinen `node_modules`'u yeniden kurar. **Birkaç dakika sürer**, bitmesini
-   bekle.
 
 ---
 
-## Adım 3 — İlk çalıştırma
+## Adım 3 — Kurulumu tamamla (tek tıkla)
 
-Proje klasöründeki **`Questo'yu Başlat.bat`** dosyasına çift tıkla.
+Proje klasöründeki **`Questo'yu Kur.bat`** dosyasına çift tıkla. Bu dosya gerekli
+her şeyi **tek seferde** kendisi yapar:
+
+- Node.js ve Java kurulu mu kontrol eder (eksikse indirme sayfasını açar),
+- Firebase CLI yoksa otomatik kurar,
+- ayar dosyasını (`.env.local`) oluşturur,
+- bağımlılıkları kurar (`npm install`),
+- uygulamayı ilk kez derler (ilk açılış anında hızlı olsun diye),
+- masaüstüne **Questo** kısayolu koyar.
+
+"KURULUM BİTTİ" yazısını görene kadar bekle. **Birkaç dakika sürer.**
+
+> Node.js veya Java kurulu değilse Kur.bat sana söyler ve indirme sayfasını açar.
+> O programı kurup **bilgisayarı yeniden başlattıktan sonra** `Questo'yu Kur.bat`'ı
+> tekrar çalıştır.
+
+> **Elle yapmak isteyenler için (alternatif):** klasör içinde `Shift + Sağ tık →
+> "Terminalde aç"` → `npm install` yaz. Kur.bat zaten bunu senin yerine yapar.
+
+---
+
+## Adım 4 — İlk çalıştırma
+
+Masaüstündeki **Questo** kısayoluna (ya da klasördeki **`Questo'yu Başlat.bat`**)
+çift tıkla.
 
 İlk açılışta her şeyi kendisi yapar:
 - ayar dosyasını (`.env.local`) oluşturur,
@@ -92,7 +108,7 @@ Tarayıcıda **`http://localhost:3000`** açıldıysa → **PC tarafı çalış�
 
 ---
 
-## Adım 4 — Telefon/tabletten bağlan (aynı Wi-Fi)
+## Adım 5 — Telefon/tabletten bağlan (aynı Wi-Fi)
 
 PC ve telefonlar **aynı Wi-Fi ağına** bağlı olmalı. Router ayarı gerekmez.
 
@@ -113,19 +129,17 @@ PC ve telefonlar **aynı Wi-Fi ağına** bağlı olmalı. Router ayarı gerekmez
 
 ---
 
-## Adım 5 — (Önerilir) Otomatik başlatma + masaüstü kısayolu
+## Adım 6 — (Önerilir) PC açılınca otomatik başlatma
 
-Bunları kurarsan PC her açıldığında sistem kendiliğinden başlar ve masaüstünden
-tek tıkla yönetirsin.
+Masaüstü kısayolunu `Questo'yu Kur.bat` zaten oluşturdu. Bir de PC her açıldığında
+sistemin kendiliğinden kalkmasını istersen:
 
-**Otomatik başlatma** (PC açılınca sistem kendi kalkar):
 - `scripts\otomatik-baslat-kur.ps1` dosyasına **sağ tık → "PowerShell ile
   çalıştır"** → çıkan izin (UAC) penceresinde **"Evet"**.
 - Geri almak: `powershell -ExecutionPolicy Bypass -File scripts\otomatik-baslat-kur.ps1 -Kaldir`
 
-**Masaüstü kısayolu** (yönetici izni gerekmez):
-- `scripts\kisayol-olustur.ps1` dosyasına **sağ tık → "PowerShell ile çalıştır"**.
-- Masaüstünde **Questo** ikonu oluşur; çift tıklayınca Başlat/Durdur menüsü açılır.
+> Masaüstü kısayolu oluşmadıysa elle:
+> `scripts\kisayol-olustur.ps1` → sağ tık → "PowerShell ile çalıştır".
 
 ---
 
@@ -153,9 +167,9 @@ tek tıkla yönetirsin.
 
 ## Özet (çok kısa)
 
-1. Yeni PC'ye **Node.js + Java + Firebase CLI** kur.
+1. Yeni PC'ye **Node.js** ve **Java** kur (Firebase CLI'yi Kur.bat halleder).
 2. Eski PC'de `Durdur` → `node_modules` ve `.next`'i sil → klasörü USB/MEGA'ya kopyala.
-3. Yeni PC'de klasörü yapıştır → klasör içinde `npm install`.
-4. `Questo'yu Başlat.bat`'a çift tıkla → `http://localhost:3000`.
+3. Yeni PC'de klasörü yapıştır → **`Questo'yu Kur.bat`**'a çift tıkla (gerisini yapar).
+4. Masaüstündeki **Questo** kısayolu / `Questo'yu Başlat.bat` → `http://localhost:3000`.
 5. Telefondan aynı Wi-Fi'de `http://<BILGISAYAR-ADI>:3000`.
-6. İstersen `otomatik-baslat-kur.ps1` + `kisayol-olustur.ps1`.
+6. İstersen `otomatik-baslat-kur.ps1` ile açılışta otomatik başlatmayı aç.
