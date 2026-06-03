@@ -50,36 +50,23 @@ rem Periodic yedek scripti (15 dk'da bir export + gunluk zip) - paralel, kritik 
 echo   [+]   Periodic yedek scripti baslatiliyor (log: %LOG%\yedek.log)...
 wscript "%~dp0scripts\gizli-calistir.vbs" "yedek.log" "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\yedek-periodic.ps1"
 
-rem [4/5] Emulator portlarini bekle (firestore 8080, auth 9099) - max 90 sn
-rem TEK PowerShell prosesi icinde 300 ms araliklarla yoklar; her yoklamada yeni
-rem proses acmak (eski yontem, ~2 sn granulerlik + proses maliyeti) yerine hizli.
-echo   [4/5] Emulator hazir olana kadar bekleniyor...
-powershell -NoProfile -Command "$d=0.0; while($d -lt 90){ try{ (New-Object Net.Sockets.TcpClient('127.0.0.1',8080)).Close(); (New-Object Net.Sockets.TcpClient('127.0.0.1',9099)).Close(); exit 0 }catch{ Start-Sleep -Milliseconds 300; $d+=0.3 } }; exit 1"
+rem [4/5] Sadece Next.js'i bekle (3000) - emulator arka planda devam eder.
+rem Boylece tarayici ~5 sn'de acilir (yeniden build yoksa). Emulator
+rem genellikle 25-40 sn'de hazir olur; siz giris formunu doldurana kadar hazir olmus olur.
+echo   [4/5] Uygulama hazir olana kadar bekleniyor...
+powershell -NoProfile -Command "$d=0.0; while($d -lt 150){ try{ (New-Object Net.Sockets.TcpClient('127.0.0.1',3000)).Close(); exit 0 }catch{ Start-Sleep -Milliseconds 200; $d+=0.2 } }; exit 1"
 if errorlevel 1 (
     echo.
-    echo   HATA: Emulator 90 saniye icinde baslamadi.
-    echo   Log: %LOG%\emulator.log
-    pause
-    exit /b 1
-)
-
-rem [5/5] Demo veri yukle - ARKA PLANDA (kritik degil ve idempotent: menu zaten
-rem doluysa seed kendini atlar). Boylece tarayici acilisi seed'i BEKLEMEZ; ilk
-rem kurulumda veri birkac saniye icinde canli (onSnapshot) gelir. Eskiden bu adim
-rem senkron beklendigi icin her acilisa ~3-5 sn ekliyordu.
-echo   [5/5] Demo veri arka planda yukleniyor (gerekirse)...
-wscript "%~dp0scripts\gizli-calistir.vbs" "seed.log" "npm run seed"
-
-rem Next.js portunu bekle (3000) - max 180 sn (paralel build payi dahil)
-rem TEK PowerShell prosesi, 300 ms yoklama.
-powershell -NoProfile -Command "$d=0.0; while($d -lt 180){ try{ (New-Object Net.Sockets.TcpClient('127.0.0.1',3000)).Close(); exit 0 }catch{ Start-Sleep -Milliseconds 300; $d+=0.3 } }; exit 1"
-if errorlevel 1 (
-    echo.
-    echo   HATA: Next.js 180 saniye icinde baslamadi.
+    echo   HATA: Next.js 150 saniye icinde baslamadi.
     echo   Log: %LOG%\nextjs.log
     pause
     exit /b 1
 )
+
+rem [5/5] Demo veri yukle - ARKA PLANDA (emulator hazir degilse seed kendiginden
+rem yeniden dener; idempotent: menu zaten doluysa atlaniyor).
+echo   [5/5] Demo veri arka planda yukleniyor (gerekirse)...
+wscript "%~dp0scripts\gizli-calistir.vbs" "seed.log" "npm run seed"
 
 rem Tarayiciyi ac - Chrome onceligi, Edge fallback, son care: shell URL handler
 set "TARAYICI=?"
@@ -112,7 +99,8 @@ color 0A
 echo.
 echo   Questo hazir!  ^>  %QUESTO_URL%
 echo.
-echo   Telefondan (ayni Wi-Fi):  http://%COMPUTERNAME%:3000   (bu adres degismez)
+echo   Telefondan (ayni Wi-Fi): Questo Yonetim penceresinden IP adresini kopyalayin.
+echo   NOT: Emulator arka planda ~30 sn'de hazir olur. Giris icin biraz bekleyin.
 echo.
 echo   Tarayici:   !TARAYICI!   (acilmadiysa URL'i manuel acin)
 echo   Loglar:     %LOG%\emulator.log  /  %LOG%\nextjs.log  /  %LOG%\yedek.log

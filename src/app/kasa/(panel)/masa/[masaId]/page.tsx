@@ -43,7 +43,7 @@ export default async function MasaSiparisSayfasi({
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-2 py-2 space-y-2 sm:px-4 sm:py-4 sm:space-y-4">
+    <div className="mx-auto max-w-5xl px-2 py-2 space-y-2 sm:px-4 sm:py-3 sm:space-y-3">
       {/* Mobil: tek satır kompakt başlık */}
       <div className="flex items-center gap-2 sm:hidden">
         <Link

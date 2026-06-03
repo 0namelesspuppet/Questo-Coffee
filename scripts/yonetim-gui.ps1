@@ -17,10 +17,12 @@ $baslatBat = BatBul '*Ba?lat.bat'
 $durdurBat = BatBul '*Durdur.bat'
 
 # --- Erisim adresleri (telefon baglantisi) ---
-# Bilgisayar adi, IP zaman zaman degisse bile SABIT kalir; birincil adres budur.
-# IP yalnizca yedek olarak gosterilir. Boylece IP degistiginde kullanicilar
-# sasirmaz: telefonda "Ana ekrana ekle" ile eklenen sabit adres calismaya devam eder.
+# IP adresi birincil (onerilen) adres; bilgisayar adi yedek olarak gosterilir.
+# Her timer tikinde her ikisi de guncellenir: bilgisayar adi degistirilse bile
+# dogru deger anlinda yansir.
 $script:pcAd = $env:COMPUTERNAME
+$script:yerelIpCache = $null
+$script:ipGuncellemeSayac = 0
 function AdresSabit { "http://$($script:pcAd):3000" }
 function YerelIP {
   # 1) Varsayilan ag gecidi olan (gercek Wi-Fi/Ethernet) adaptorun IPv4'u
@@ -140,7 +142,14 @@ function KontrolBaslat {
 }
 
 # Bir tik: once onceki sonucu oku, sonra yeni kontrolu baslat.
-function Tazele { SonuclariOku; KontrolBaslat }
+# Her tikde bilgisayar adini guncelle; IP'yi ise 12 tikde bir guncelle (~30 sn).
+function Tazele {
+  SonuclariOku; KontrolBaslat
+  $script:pcAd = $env:COMPUTERNAME
+  $script:ipGuncellemeSayac++
+  if ($script:ipGuncellemeSayac -ge 12) { $script:ipGuncellemeSayac = 0; AdresGuncelle }
+  else { $lblAdresPcAd.Text = "Bilgisayar adi: $(AdresSabit)" }
+}
 
 # --- Buton uretici ---
 function Buton($metin, $x, $w, $renk) {
@@ -194,7 +203,7 @@ $btnYenile.FlatAppearance.BorderSize = 1
 $btnYenile.ForeColor = $cYazi
 $btnYenile.BackColor = $cKart
 $btnYenile.Cursor = [System.Windows.Forms.Cursors]::Hand
-$btnYenile.Add_Click({ Tazele; AdresGuncelle; $btnKopya.Text = "Adresi kopyala" })
+$btnYenile.Add_Click({ Tazele; AdresGuncelle; $btnKopya.Text = "IP'yi kopyala" })
 $form.Controls.Add($btnYenile)
 
 $btnYeniden = New-Object System.Windows.Forms.Button
@@ -221,30 +230,32 @@ $form.Controls.Add($btnYeniden)
 
 # --- Telefon erisim adresi paneli ---
 $lblAdresBaslik = New-Object System.Windows.Forms.Label
-$lblAdresBaslik.Text = "Telefondan baglan (ayni Wi-Fi) - bu adres degismez:"
+$lblAdresBaslik.Text = "Telefondan baglan (ayni Wi-Fi) - IP onerilen:"
 $lblAdresBaslik.ForeColor = $cYazi
 $lblAdresBaslik.Location = New-Object System.Drawing.Point(20, 230)
 $lblAdresBaslik.Size = New-Object System.Drawing.Size(360, 20)
 $form.Controls.Add($lblAdresBaslik)
 
+# IP adresi - BIRINCIL (buyuk, yesil) — bilgisayar adi degisse de calisir
 $lblAdresSabit = New-Object System.Windows.Forms.Label
-$lblAdresSabit.Text = (AdresSabit)
+$lblAdresSabit.Text = "Yukleniyor..."
 $lblAdresSabit.ForeColor = $cYesil
 $lblAdresSabit.Font = New-Object System.Drawing.Font("Consolas", 12, [System.Drawing.FontStyle]::Bold)
 $lblAdresSabit.Location = New-Object System.Drawing.Point(20, 250)
 $lblAdresSabit.Size = New-Object System.Drawing.Size(360, 24)
 $form.Controls.Add($lblAdresSabit)
 
-$lblAdresIP = New-Object System.Windows.Forms.Label
-$lblAdresIP.Text = "IP yedek: ..."
-$lblAdresIP.ForeColor = [System.Drawing.Color]::FromArgb(161, 161, 170)
-$lblAdresIP.Font = New-Object System.Drawing.Font("Consolas", 9)
-$lblAdresIP.Location = New-Object System.Drawing.Point(20, 277)
-$lblAdresIP.Size = New-Object System.Drawing.Size(360, 18)
-$form.Controls.Add($lblAdresIP)
+# Bilgisayar adi - yedek (kucuk, gri) — her tikde guncellenir
+$lblAdresPcAd = New-Object System.Windows.Forms.Label
+$lblAdresPcAd.Text = "Bilgisayar adi: $(AdresSabit)"
+$lblAdresPcAd.ForeColor = [System.Drawing.Color]::FromArgb(161, 161, 170)
+$lblAdresPcAd.Font = New-Object System.Drawing.Font("Consolas", 9)
+$lblAdresPcAd.Location = New-Object System.Drawing.Point(20, 277)
+$lblAdresPcAd.Size = New-Object System.Drawing.Size(360, 18)
+$form.Controls.Add($lblAdresPcAd)
 
 $btnKopya = New-Object System.Windows.Forms.Button
-$btnKopya.Text = "Adresi kopyala"
+$btnKopya.Text = "IP'yi kopyala"
 $btnKopya.Location = New-Object System.Drawing.Point(20, 300)
 $btnKopya.Size = New-Object System.Drawing.Size(172, 36)
 $btnKopya.FlatStyle = 'Flat'
@@ -253,7 +264,8 @@ $btnKopya.ForeColor = $cYazi
 $btnKopya.BackColor = $cKart
 $btnKopya.Cursor = [System.Windows.Forms.Cursors]::Hand
 $btnKopya.Add_Click({
-  $u = AdresSabit
+  $ip = YerelIP
+  $u = if ($ip) { "http://$($ip):3000" } else { AdresSabit }
   try { [System.Windows.Forms.Clipboard]::SetText($u) }
   catch { try { Set-Clipboard -Value $u } catch {} }
   $btnKopya.Text = "Kopyalandi!"
@@ -261,18 +273,20 @@ $btnKopya.Add_Click({
 $form.Controls.Add($btnKopya)
 
 $lblIpucu = New-Object System.Windows.Forms.Label
-$lblIpucu.Text = "Telefonda tarayicida ac, sonra 'Ana ekrana ekle'. Sonra IP degisse de calisir."
+$lblIpucu.Text = "Telefonda tarayicida ac, 'Ana ekrana ekle'. IP degisirse bu panelden tekrar kopyala."
 $lblIpucu.ForeColor = [System.Drawing.Color]::FromArgb(161, 161, 170)
 $lblIpucu.Font = New-Object System.Drawing.Font("Segoe UI", 8)
 $lblIpucu.Location = New-Object System.Drawing.Point(200, 300)
-$lblIpucu.Size = New-Object System.Drawing.Size(180, 38)
+$lblIpucu.Size = New-Object System.Drawing.Size(180, 42)
 $form.Controls.Add($lblIpucu)
 
-# IP yedek satirini guncelle (IP nadiren degisir; tikta degil, acilis/yenilemede).
+# IP ve bilgisayar adini guncelle — acilista ve her ~30 sn'de bir cagrilir.
 function AdresGuncelle {
   $ip = YerelIP
-  if ($ip) { $lblAdresIP.Text = "IP yedek: http://$($ip):3000" }
-  else { $lblAdresIP.Text = "IP yedek: (bulunamadi - bilgisayar adini kullanin)" }
+  $script:yerelIpCache = $ip
+  if ($ip) { $lblAdresSabit.Text = "http://$($ip):3000" }
+  else { $lblAdresSabit.Text = "(IP bulunamadi - Wi-Fi bagli mi?)" }
+  $lblAdresPcAd.Text = "Bilgisayar adi: $(AdresSabit)"
 }
 
 # Otomatik yenileme (canli durum)

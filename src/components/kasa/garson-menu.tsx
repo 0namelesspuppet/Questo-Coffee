@@ -428,7 +428,7 @@ export function GarsonMenu({ masaId, masaAd }: Props) {
   );
 
   return (
-    <div className="grid gap-3 pb-24 sm:gap-4 lg:grid-cols-[1fr_320px] lg:pb-0">
+    <div className="grid gap-3 pb-24 sm:gap-4 lg:grid-cols-[1fr_280px] lg:pb-0">
       <div className="space-y-2 sm:space-y-3">
         {/* Arama + kategoriler — mobilde sticky */}
         <div className="sticky top-11 z-20 -mx-2 space-y-2 border-b border-transparent bg-background/95 px-2 pt-1 pb-2 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:static sm:top-auto sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-0">
@@ -523,7 +523,7 @@ export function GarsonMenu({ masaId, masaAd }: Props) {
       </div>
 
       {/* Masaüstü: sağ sticky sepet paneli */}
-      <aside className="hidden space-y-3 rounded-lg border bg-card p-3 lg:block lg:sticky lg:top-20 lg:self-start">
+      <aside className="hidden space-y-3 rounded-lg border bg-card p-2.5 lg:block lg:sticky lg:top-16 lg:self-start">
         {sepetIcerigi}
       </aside>
 
@@ -635,7 +635,7 @@ function UrunListesi({
                 {adet === 0 ? (
                   <span
                     aria-hidden="true"
-                    className="inline-flex h-14 min-w-14 shrink-0 items-center justify-center rounded-full bg-primary px-3 text-primary-foreground shadow-soft sm:h-11 sm:min-w-11"
+                    className="inline-flex h-14 min-w-12 shrink-0 items-center justify-center rounded-full bg-primary px-3 text-primary-foreground shadow-soft sm:h-11 sm:min-w-11"
                   >
                     <Plus className="size-6" strokeWidth={3} />
                   </span>
@@ -650,7 +650,7 @@ function UrunListesi({
                         e.stopPropagation();
                         urunCikar(u);
                       }}
-                      className="flex h-14 w-14 items-center justify-center rounded-l-full active:bg-primary/80 sm:h-11 sm:w-11"
+                      className="flex h-14 w-12 items-center justify-center rounded-l-full active:bg-primary/80 sm:h-11 sm:w-11"
                       aria-label={`${u.ad} azalt`}
                     >
                       <Minus className="size-6" strokeWidth={3} />
@@ -664,7 +664,7 @@ function UrunListesi({
                         e.stopPropagation();
                         urunEkle(u);
                       }}
-                      className="flex h-14 w-14 items-center justify-center rounded-r-full active:bg-primary/80 sm:h-11 sm:w-11"
+                      className="flex h-14 w-12 items-center justify-center rounded-r-full active:bg-primary/80 sm:h-11 sm:w-11"
                       aria-label={`${u.ad} ekle`}
                     >
                       <Plus className="size-6" strokeWidth={3} />
