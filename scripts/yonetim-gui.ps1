@@ -30,11 +30,17 @@ function GizliCalistir($bat, $arg, $bekle) {
 $script:yerelIpCache      = $null
 $script:ipGuncellemeSayac = 0
 
-# Gecis (pending) durumu: Baslat/Durdur tiklaninca, hedefe ULASILANA kadar
-# "BASLATILIYOR/DURDURULUYOR" yazisi korunur; port-yoklama yazisi onu ezmesin.
-#   $null | 'baslat' (hedef: tum portlar acik) | 'durdur' (hedef: tum portlar kapali)
-$script:beklenen    = $null
-$script:bekleyenTik = 0
+# Gecis (pending) durumu — event handler'lar ile timer/fonksiyonlar ARASINDA
+# paylasilir. Baslat/Durdur tiklaninca, hedefe ULASILANA kadar "BASLATILIYOR/
+# DURDURULUYOR" yazisi korunur; 2.5 sn'lik port-yoklamasi yaziyi ezmesin.
+#
+# ONEMLI: Hashtable BILEREK kullanildi. Event handler scriptblock'larinda
+# "$script:degisken = ..." ATAMASI guvenilir DEGIL (yazi script scope'a
+# ulasmiyor; pending kayboluyor ve durum yazisi anlik eziliyordu). Cozum:
+# scriptblock'larda yalniz $durum REFERANSI okunur (scope zincirinde bulunur)
+# ve .anahtar MUTE edilir — mutasyon her scope'ta calisir.
+#   beklenen: $null | 'baslat' (hedef: tum portlar acik) | 'durdur' (hedef: hepsi kapali)
+$durum = @{ beklenen = $null; tik = 0 }
 
 function YerelIP {
   try {
@@ -231,12 +237,12 @@ function SonuclariOku {
   # Bir gecis bekleniyorsa (Baslat/Durdur): hedefe ULASANA kadar gecis yazisini
   # KORU. ~4 dk (96 tik x 2.5 sn) icinde ulasilmazsa - islem takilmis olabilir -
   # vazgec ve gercek durumu goster.
-  if ($script:beklenen) {
-    $script:bekleyenTik++
-    $hedefVar = ($script:beklenen -eq 'baslat' -and $acik -eq $toplam) -or ($script:beklenen -eq 'durdur' -and $acik -eq 0)
-    if (-not $hedefVar -and $script:bekleyenTik -lt 96) { return }
-    $script:beklenen    = $null
-    $script:bekleyenTik = 0
+  if ($durum.beklenen) {
+    $durum.tik = $durum.tik + 1
+    $hedefVar = ($durum.beklenen -eq 'baslat' -and $acik -eq $toplam) -or ($durum.beklenen -eq 'durdur' -and $acik -eq 0)
+    if (-not $hedefVar -and $durum.tik -lt 96) { return }
+    $durum.beklenen = $null
+    $durum.tik      = 0
   }
 
   if ($acik -eq $toplam) {
@@ -277,14 +283,14 @@ function Tazele {
 $btnBaslat.Add_Click({
   if (-not $baslatBat) { [System.Windows.Forms.MessageBox]::Show("Baslatma .bat bulunamadi.", "Questo") | Out-Null; return }
   GizliCalistir $baslatBat 'gizli' $false
-  $script:beklenen = 'baslat'; $script:bekleyenTik = 0
+  $durum.beklenen = 'baslat'; $durum.tik = 0
   $genel.Text = "BASLATILIYOR..."; $genel.BackColor = $cTuruncu
   $btnBaslat.Enabled = $false; $btnDurdur.Enabled = $false
 })
 $btnDurdur.Add_Click({
   if (-not $durdurBat) { [System.Windows.Forms.MessageBox]::Show("Durdurma .bat bulunamadi.", "Questo") | Out-Null; return }
   GizliCalistir $durdurBat $null $false
-  $script:beklenen = 'durdur'; $script:bekleyenTik = 0
+  $durum.beklenen = 'durdur'; $durum.tik = 0
   $genel.Text = "DURDURULUYOR..."; $genel.BackColor = $cTuruncu
   $btnBaslat.Enabled = $false; $btnDurdur.Enabled = $false
 })
@@ -301,7 +307,7 @@ $yenileTimer.Add_Tick({
 # Durumu yenile: bekleme durumunu temizle (gercek port durumu hemen okunsun),
 # IP + QR'yi tazele ve butonda "Yeniliyor..." -> "Yenilendi" geri bildirimi goster.
 $btnYenile.Add_Click({
-  $script:beklenen = $null; $script:bekleyenTik = 0
+  $durum.beklenen = $null; $durum.tik = 0
   $btnYenile.Text = "Yeniliyor..."; $btnYenile.Enabled = $false; $btnYenile.Refresh()
   Tazele
   AdresGuncelle
@@ -312,7 +318,7 @@ $btnYenile.Add_Click({
 })
 $btnYeniden.Add_Click({
   if (-not $durdurBat -or -not $baslatBat) { [System.Windows.Forms.MessageBox]::Show("Bat bulunamadi.", "Questo") | Out-Null; return }
-  $script:beklenen = 'baslat'; $script:bekleyenTik = 0
+  $durum.beklenen = 'baslat'; $durum.tik = 0
   $genel.Text = "YENIDEN BASLATILIYOR..."; $genel.BackColor = $cTuruncu
   $btnBaslat.Enabled = $false; $btnDurdur.Enabled = $false
   $genel.Refresh()
