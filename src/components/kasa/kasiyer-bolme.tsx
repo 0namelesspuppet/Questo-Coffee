@@ -47,6 +47,10 @@ export function KasiyerBolme({
   // Ürün seçerek ödeme: kalem anahtarı → seçilen birim adedi.
   const [seciliAdet, setSeciliAdet] = useState<Map<string, number>>(new Map());
   const [odenenSayisi, setOdenenSayisi] = useState(0);
+  // Eşit bölmenin tabanı: ilk dilim ödenince o anki KALAN tutara sabitlenir.
+  // Böylece önceden ürün seçerek kısmi ödeme yapıldıysa, eşit bölme genel
+  // toplam değil kalan tutar üzerinden yapılır.
+  const [esitTaban, setEsitTaban] = useState<number | null>(null);
   const [yukleniyor, setYukleniyor] = useState<string | null>(null);
   const [hata, setHata] = useState<string | null>(null);
 
@@ -82,9 +86,11 @@ export function KasiyerBolme({
     0,
   );
 
-  // Kişi başı, KALAN değil değişmeyen GENEL toplam üzerinden sabit hesaplanır;
-  // bir kişi ödeyince bekleyenlerin tutarı düşmüş gibi görünmez.
-  const kisiPayi = Math.ceil(genelToplamKurus / kisiSayisi);
+  // Bölünecek taban: ilk dilim ödendiyse sabitlenmiş tutar, yoksa o anki kalan.
+  // Bir kişi ödeyince diğerlerinin payı düşmüş gibi görünmesin diye sabitlenir;
+  // ama ürün seçerek yapılan kısmi ödemeler kalandan otomatik düşülmüş olur.
+  const esitTabanKurus = esitTaban ?? toplamKurus;
+  const kisiPayi = Math.ceil(esitTabanKurus / Math.max(1, kisiSayisi));
 
   const setKalemAdet = (key: string, adet: number) => {
     setSeciliAdet((prev) => {
@@ -128,10 +134,12 @@ export function KasiyerBolme({
 
   const esitDilimOde = () => {
     if (tamamenOdendi) return; // 0 tutarlı talep guard'ı
+    const taban = esitTaban ?? toplamKurus;
     const anahtar = `esit-${odenenSayisi}`;
-    talep({ yontem: 'esit', kisiSayisi }, anahtar, () =>
-      setOdenenSayisi((n) => n + 1),
-    );
+    talep({ yontem: 'esit', kisiSayisi, tabanKurus: taban }, anahtar, () => {
+      setEsitTaban(taban); // bölme tabanını ilk ödemede sabitle
+      setOdenenSayisi((n) => n + 1);
+    });
   };
 
   const urunOde = () => {
@@ -254,8 +262,8 @@ export function KasiyerBolme({
 
           <div className="rounded-lg bg-muted/50 px-3 py-2 text-sm">
             <div className="flex justify-between text-muted-foreground">
-              <span>Toplam</span>
-              <span>{formatTL(genelToplamKurus)}</span>
+              <span>Bölünecek (kalan)</span>
+              <span>{formatTL(esitTabanKurus)}</span>
             </div>
             <div className="flex justify-between font-medium mt-1">
               <span>Kişi başı</span>

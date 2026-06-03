@@ -117,6 +117,12 @@ export const OdemeTalebiIstegi = z.discriminatedUnion('yontem', [
   z.object({
     yontem: z.literal('esit'),
     kisiSayisi: z.number().int().min(2).max(20),
+    /**
+     * Bölünecek taban tutar (kuruş). Verilmezse adisyonun genel toplamı
+     * kullanılır. Ürün seçerek kısmi ödeme yapıldıktan sonra kalan tutarın
+     * eşit bölünmesi için, bölme anındaki KALAN tutar buradan gönderilir.
+     */
+    tabanKurus: z.number().int().min(0).max(100_000_000).optional(),
     musteriAd: z.string().trim().min(1).max(50).optional(),
   }),
   z.object({

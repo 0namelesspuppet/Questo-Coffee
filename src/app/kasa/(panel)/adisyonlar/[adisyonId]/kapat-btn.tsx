@@ -55,13 +55,13 @@ export function AdisyonuKapatBtn({
         type="button"
         onClick={kapat}
         disabled={yukleniyor || kalanKurus > 0}
-        className="w-full rounded-md bg-destructive px-3 py-2 text-sm font-medium text-destructive-foreground disabled:opacity-40"
+        className="min-h-[56px] w-full rounded-xl bg-destructive px-4 text-base font-bold text-destructive-foreground shadow-soft transition active:scale-[0.98] disabled:opacity-40"
       >
         {yukleniyor
           ? 'Kapatılıyor…'
           : kalanKurus > 0
             ? 'Tüm ödemeler alınmadan kapatılamaz'
-            : 'Adisyonu kapat (ödeme alındı)'}
+            : 'Adisyonu Kapat'}
       </button>
     </div>
   );

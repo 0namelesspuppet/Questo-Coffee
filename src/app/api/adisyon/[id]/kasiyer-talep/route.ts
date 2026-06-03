@@ -53,11 +53,13 @@ export async function POST(
     let extra: Record<string, unknown> = {};
 
     if (body.yontem === 'esit') {
-      toplamKurus = esitOdemeTutariHesapla(
-        adisyon.toplamKurus,
-        body.kisiSayisi,
-        kalan,
-      );
+      // Bölünecek taban: istemci kısmi ödeme sonrası kalan tutarı gönderebilir;
+      // gönderilmezse genel toplam kullanılır. Genel toplamı aşamaz.
+      const taban =
+        body.tabanKurus != null
+          ? Math.min(body.tabanKurus, adisyon.toplamKurus)
+          : adisyon.toplamKurus;
+      toplamKurus = esitOdemeTutariHesapla(taban, body.kisiSayisi, kalan);
       extra = { kisiSayisi: body.kisiSayisi, kisiPayi: toplamKurus };
     } else if (body.yontem === 'urun') {
       const secimToplam = body.secilenKalemler.reduce(
