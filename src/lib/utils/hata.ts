@@ -22,6 +22,23 @@ const isFirebaseAuthError = (
   typeof (e as { code: unknown }).code === 'string' &&
   (e as { code: string }).code.startsWith('auth/');
 
+/**
+ * Bağlantı reddi / geçici ağ hatası mı? Emülatör açılışta (~25-40 sn) henüz
+ * hazır değilken istek gelirse ECONNREFUSED verir; bunu kalıcı 500 yerine 503'e
+ * çevirip istemcinin kısa aralıklarla tekrar denemesini sağlamak için kullanılır.
+ */
+export const baglantiReddiHatasi = (e: unknown): boolean => {
+  const mesaj = e instanceof Error ? e.message : String(e ?? '');
+  const kod =
+    typeof e === 'object' && e !== null && 'code' in e
+      ? String((e as { code: unknown }).code)
+      : '';
+  return (
+    /ECONNREFUSED|ECONNRESET|ETIMEDOUT|EAI_AGAIN|socket hang up/i.test(mesaj) ||
+    /unavailable|network/i.test(kod)
+  );
+};
+
 export const httpHata = (e: unknown): Response => {
   if (e instanceof AppError) {
     return Response.json(

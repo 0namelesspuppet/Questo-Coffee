@@ -1,5 +1,5 @@
 import { getAdminAuth } from '@/lib/firebase/admin';
-import { AppError, httpHata } from '@/lib/utils/hata';
+import { AppError, baglantiReddiHatasi, httpHata } from '@/lib/utils/hata';
 import { emulatorOrtami } from '@/lib/utils/ortam';
 
 export const runtime = 'nodejs';
@@ -48,6 +48,17 @@ export async function POST() {
 
     return Response.json({ ok: true, customToken });
   } catch (e) {
+    // Emülatör açılışta (~25-40 sn) henüz hazır değilken tıklanırsa bağlantı
+    // reddi olur; kalıcı hata değil — istemci tekrar denesin diye 503 dön.
+    if (baglantiReddiHatasi(e)) {
+      return httpHata(
+        new AppError(
+          'emulator_hazir_degil',
+          'Sistem henüz hazırlanıyor, birkaç saniye sonra tekrar deneyin.',
+          503,
+        ),
+      );
+    }
     return httpHata(e);
   }
 }

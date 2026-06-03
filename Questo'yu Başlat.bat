@@ -83,6 +83,13 @@ if errorlevel 1 (
     exit /b 1
 )
 
+rem [4b/5] Auth + Firestore emulatorunu da bekle (9099 + 8080). Boylece tarayici
+rem acildiginda ilk "Garson/Kasiyer" tiklamasi emulator hazir olmadan ECONNREFUSED
+rem vermez. Import ~25-40 sn surebilir; en fazla 90 sn bekle, sonra yine de devam et.
+echo   [4b/5] Emulator (giris/veritabani) hazir olana kadar bekleniyor...
+powershell -NoProfile -Command "$d=0.0; while($d -lt 90){ try{ (New-Object Net.Sockets.TcpClient('127.0.0.1',9099)).Close(); (New-Object Net.Sockets.TcpClient('127.0.0.1',8080)).Close(); exit 0 }catch{ Start-Sleep -Milliseconds 300; $d+=0.3 } }; exit 1"
+if errorlevel 1 echo   UYARI: Emulator 90 sn icinde hazir olmadi; yine de aciliyor (ilk giris birkac saniye gecikebilir).
+
 rem [5/5] Demo veri yukle - ARKA PLANDA (emulator hazir degilse seed kendiginden
 rem yeniden dener; idempotent: menu zaten doluysa atlaniyor).
 echo   [5/5] Demo veri arka planda yukleniyor (gerekirse)...
