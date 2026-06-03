@@ -112,6 +112,8 @@ color 0A
 echo.
 echo   Questo hazir!  ^>  %QUESTO_URL%
 echo.
+echo   Telefondan (ayni Wi-Fi):  http://%COMPUTERNAME%:3000   (bu adres degismez)
+echo.
 echo   Tarayici:   !TARAYICI!   (acilmadiysa URL'i manuel acin)
 echo   Loglar:     %LOG%\emulator.log  /  %LOG%\nextjs.log  /  %LOG%\yedek.log
 echo   Durdurmak:  Questo'yu Durdur.bat

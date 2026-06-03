@@ -16,6 +16,30 @@ function BatBul($desen) {
 $baslatBat = BatBul '*Ba?lat.bat'
 $durdurBat = BatBul '*Durdur.bat'
 
+# --- Erisim adresleri (telefon baglantisi) ---
+# Bilgisayar adi, IP zaman zaman degisse bile SABIT kalir; birincil adres budur.
+# IP yalnizca yedek olarak gosterilir. Boylece IP degistiginde kullanicilar
+# sasirmaz: telefonda "Ana ekrana ekle" ile eklenen sabit adres calismaya devam eder.
+$script:pcAd = $env:COMPUTERNAME
+function AdresSabit { "http://$($script:pcAd):3000" }
+function YerelIP {
+  # 1) Varsayilan ag gecidi olan (gercek Wi-Fi/Ethernet) adaptorun IPv4'u
+  try {
+    $cfg = Get-NetIPConfiguration -ErrorAction Stop |
+      Where-Object { $_.IPv4DefaultGateway -and $_.NetAdapter.Status -eq 'Up' } |
+      Select-Object -First 1
+    if ($cfg -and $cfg.IPv4Address) { return $cfg.IPv4Address.IPAddress }
+  } catch {}
+  # 2) .NET fallback (NetTCPIP modulu yoksa) - loopback/APIPA harici ilk IPv4
+  try {
+    foreach ($a in [System.Net.Dns]::GetHostAddresses([System.Net.Dns]::GetHostName())) {
+      $s = $a.ToString()
+      if ($a.AddressFamily -eq 'InterNetwork' -and $s -ne '127.0.0.1' -and $s -notlike '169.254.*') { return $s }
+    }
+  } catch {}
+  return $null
+}
+
 # --- Renkler ---
 $cYesil  = [System.Drawing.Color]::FromArgb(22, 163, 74)    # calisiyor
 $cKirmizi = [System.Drawing.Color]::FromArgb(220, 38, 38)   # kapali
@@ -27,7 +51,7 @@ $cYazi   = [System.Drawing.Color]::FromArgb(244, 244, 245)
 # --- Form ---
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "Questo Yonetim"
-$form.Size = New-Object System.Drawing.Size(400, 300)
+$form.Size = New-Object System.Drawing.Size(400, 460)
 $form.StartPosition = 'CenterScreen'
 $form.FormBorderStyle = 'FixedDialog'
 $form.MaximizeBox = $false
@@ -91,11 +115,15 @@ function SonuclariOku {
   }
   if ($acikSayisi -eq $script:baglantilar.Count) {
     $genel.Text = "SISTEM CALISIYOR"; $genel.BackColor = $cYesil
+    # Calisiyorken Baslat KILITLI (tekrar baslatip calisani bozmasin), Durdur acik.
+    $btnBaslat.Enabled = $false; $btnDurdur.Enabled = $true
   } elseif ($acikSayisi -eq 0) {
     $genel.Text = "SISTEM KAPALI"; $genel.BackColor = $cKirmizi
+    $btnBaslat.Enabled = $true; $btnDurdur.Enabled = $false
   } else {
     $genel.Text = "KISMEN CALISIYOR ($acikSayisi/$($script:baglantilar.Count))"
     $genel.BackColor = $cTuruncu
+    $btnBaslat.Enabled = $true; $btnDurdur.Enabled = $true
   }
 }
 
@@ -141,6 +169,8 @@ $btnBaslat.Add_Click({
   Start-Process -FilePath $baslatBat -WorkingDirectory $kok
   $genel.Text = "BASLATILIYOR..."
   $genel.BackColor = $cTuruncu
+  # Cift tiklamayi onle - durum yenilenince kontrol tekrar buton durumunu ayarlar.
+  $btnBaslat.Enabled = $false
 })
 
 $btnDurdur.Add_Click({
@@ -151,6 +181,7 @@ $btnDurdur.Add_Click({
   Start-Process -FilePath $durdurBat -WorkingDirectory $kok
   $genel.Text = "DURDURULUYOR..."
   $genel.BackColor = $cTuruncu
+  $btnDurdur.Enabled = $false
 })
 
 # Alt satir: Durumu yenile + Yeniden baslat
@@ -163,7 +194,7 @@ $btnYenile.FlatAppearance.BorderSize = 1
 $btnYenile.ForeColor = $cYazi
 $btnYenile.BackColor = $cKart
 $btnYenile.Cursor = [System.Windows.Forms.Cursors]::Hand
-$btnYenile.Add_Click({ Tazele })
+$btnYenile.Add_Click({ Tazele; AdresGuncelle; $btnKopya.Text = "Adresi kopyala" })
 $form.Controls.Add($btnYenile)
 
 $btnYeniden = New-Object System.Windows.Forms.Button
@@ -188,12 +219,68 @@ $btnYeniden.Add_Click({
 })
 $form.Controls.Add($btnYeniden)
 
+# --- Telefon erisim adresi paneli ---
+$lblAdresBaslik = New-Object System.Windows.Forms.Label
+$lblAdresBaslik.Text = "Telefondan baglan (ayni Wi-Fi) - bu adres degismez:"
+$lblAdresBaslik.ForeColor = $cYazi
+$lblAdresBaslik.Location = New-Object System.Drawing.Point(20, 230)
+$lblAdresBaslik.Size = New-Object System.Drawing.Size(360, 20)
+$form.Controls.Add($lblAdresBaslik)
+
+$lblAdresSabit = New-Object System.Windows.Forms.Label
+$lblAdresSabit.Text = (AdresSabit)
+$lblAdresSabit.ForeColor = $cYesil
+$lblAdresSabit.Font = New-Object System.Drawing.Font("Consolas", 12, [System.Drawing.FontStyle]::Bold)
+$lblAdresSabit.Location = New-Object System.Drawing.Point(20, 250)
+$lblAdresSabit.Size = New-Object System.Drawing.Size(360, 24)
+$form.Controls.Add($lblAdresSabit)
+
+$lblAdresIP = New-Object System.Windows.Forms.Label
+$lblAdresIP.Text = "IP yedek: ..."
+$lblAdresIP.ForeColor = [System.Drawing.Color]::FromArgb(161, 161, 170)
+$lblAdresIP.Font = New-Object System.Drawing.Font("Consolas", 9)
+$lblAdresIP.Location = New-Object System.Drawing.Point(20, 277)
+$lblAdresIP.Size = New-Object System.Drawing.Size(360, 18)
+$form.Controls.Add($lblAdresIP)
+
+$btnKopya = New-Object System.Windows.Forms.Button
+$btnKopya.Text = "Adresi kopyala"
+$btnKopya.Location = New-Object System.Drawing.Point(20, 300)
+$btnKopya.Size = New-Object System.Drawing.Size(172, 36)
+$btnKopya.FlatStyle = 'Flat'
+$btnKopya.FlatAppearance.BorderSize = 1
+$btnKopya.ForeColor = $cYazi
+$btnKopya.BackColor = $cKart
+$btnKopya.Cursor = [System.Windows.Forms.Cursors]::Hand
+$btnKopya.Add_Click({
+  $u = AdresSabit
+  try { [System.Windows.Forms.Clipboard]::SetText($u) }
+  catch { try { Set-Clipboard -Value $u } catch {} }
+  $btnKopya.Text = "Kopyalandi!"
+})
+$form.Controls.Add($btnKopya)
+
+$lblIpucu = New-Object System.Windows.Forms.Label
+$lblIpucu.Text = "Telefonda tarayicida ac, sonra 'Ana ekrana ekle'. Sonra IP degisse de calisir."
+$lblIpucu.ForeColor = [System.Drawing.Color]::FromArgb(161, 161, 170)
+$lblIpucu.Font = New-Object System.Drawing.Font("Segoe UI", 8)
+$lblIpucu.Location = New-Object System.Drawing.Point(200, 300)
+$lblIpucu.Size = New-Object System.Drawing.Size(180, 38)
+$form.Controls.Add($lblIpucu)
+
+# IP yedek satirini guncelle (IP nadiren degisir; tikta degil, acilis/yenilemede).
+function AdresGuncelle {
+  $ip = YerelIP
+  if ($ip) { $lblAdresIP.Text = "IP yedek: http://$($ip):3000" }
+  else { $lblAdresIP.Text = "IP yedek: (bulunamadi - bilgisayar adini kullanin)" }
+}
+
 # Otomatik yenileme (canli durum)
 $timer = New-Object System.Windows.Forms.Timer
 $timer.Interval = 2500
 $timer.Add_Tick({ Tazele })
 $timer.Start()
 
-$form.Add_Shown({ Tazele })
+$form.Add_Shown({ Tazele; AdresGuncelle })
 [void]$form.ShowDialog()
 $timer.Stop()
