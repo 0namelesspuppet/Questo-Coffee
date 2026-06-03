@@ -1,13 +1,10 @@
-# Questo Yonetim - tiklanabilir pencere (WinForms).
-# Genel durum belirteci + Baslat / Durdur / Durumu yenile / Yeniden baslat.
-# Durum 2.5 sn'de bir otomatik yenilenir. Ek kurulum gerektirmez (Windows'ta
-# yerlesik .NET WinForms kullanir). Gizli baslatici: scripts\yonetim-baslat.vbs
+# Questo Yonetim - WinForms yonetim paneli.
+# Durum gostergesi + Baslat / Durdur / Yenile / Yeniden baslat + QR telefon baglantisi.
 
 $ErrorActionPreference = 'SilentlyContinue'
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
-# Proje koku (scripts/ bir ust) ve baslat/durdur .bat dosyalari
 $kok = Split-Path -Parent $PSScriptRoot
 function BatBul($desen) {
   $f = Get-ChildItem -Path $kok -Filter $desen -File | Select-Object -First 1
@@ -16,23 +13,16 @@ function BatBul($desen) {
 $baslatBat = BatBul '*Ba?lat.bat'
 $durdurBat = BatBul '*Durdur.bat'
 
-# --- Erisim adresleri (telefon baglantisi) ---
-# IP adresi birincil (onerilen) adres; bilgisayar adi yedek olarak gosterilir.
-# Her timer tikinde her ikisi de guncellenir: bilgisayar adi degistirilse bile
-# dogru deger anlinda yansir.
-$script:pcAd = $env:COMPUTERNAME
-$script:yerelIpCache = $null
-$script:ipGuncellemeSayac = 0
-function AdresSabit { "http://$($script:pcAd):3000" }
+$script:yerelIpCache       = $null
+$script:ipGuncellemeSayac  = 0
+
 function YerelIP {
-  # 1) Varsayilan ag gecidi olan (gercek Wi-Fi/Ethernet) adaptorun IPv4'u
   try {
     $cfg = Get-NetIPConfiguration -ErrorAction Stop |
       Where-Object { $_.IPv4DefaultGateway -and $_.NetAdapter.Status -eq 'Up' } |
       Select-Object -First 1
     if ($cfg -and $cfg.IPv4Address) { return $cfg.IPv4Address.IPAddress }
   } catch {}
-  # 2) .NET fallback (NetTCPIP modulu yoksa) - loopback/APIPA harici ilk IPv4
   try {
     foreach ($a in [System.Net.Dns]::GetHostAddresses([System.Net.Dns]::GetHostName())) {
       $s = $a.ToString()
@@ -42,94 +32,117 @@ function YerelIP {
   return $null
 }
 
-# --- Renkler ---
-$cYesil  = [System.Drawing.Color]::FromArgb(22, 163, 74)    # calisiyor
-$cKirmizi = [System.Drawing.Color]::FromArgb(220, 38, 38)   # kapali
-$cTuruncu = [System.Drawing.Color]::FromArgb(217, 119, 6)   # kismen
-$cArka   = [System.Drawing.Color]::FromArgb(24, 24, 27)
-$cKart   = [System.Drawing.Color]::FromArgb(39, 39, 42)
-$cYazi   = [System.Drawing.Color]::FromArgb(244, 244, 245)
+# ---------------------------------------------------------------------------
+# Renkler
+# ---------------------------------------------------------------------------
+$cYesil    = [System.Drawing.Color]::FromArgb(22,  163,  74)
+$cKirmizi  = [System.Drawing.Color]::FromArgb(220,  38,  38)
+$cTuruncu  = [System.Drawing.Color]::FromArgb(217, 119,   6)
+$cArka     = [System.Drawing.Color]::FromArgb( 18,  18,  20)
+$cKart     = [System.Drawing.Color]::FromArgb( 39,  39,  42)
+$cKenar    = [System.Drawing.Color]::FromArgb( 63,  63,  70)
+$cYazi     = [System.Drawing.Color]::FromArgb(244, 244, 245)
+$cMuted    = [System.Drawing.Color]::FromArgb(113, 113, 122)
+$cMavi     = [System.Drawing.Color]::FromArgb( 59, 130, 246)
+$cMaviArka = [System.Drawing.Color]::FromArgb( 23,  37,  84)
 
-# --- Form ---
+# ---------------------------------------------------------------------------
+# Form
+# ---------------------------------------------------------------------------
 $form = New-Object System.Windows.Forms.Form
-$form.Text = "Questo Yonetim"
-$form.Size = New-Object System.Drawing.Size(400, 500)
-$form.StartPosition = 'CenterScreen'
+$form.Text            = "Questo Yonetim"
+$form.Size            = New-Object System.Drawing.Size(440, 530)
+$form.StartPosition   = 'CenterScreen'
 $form.FormBorderStyle = 'FixedDialog'
-$form.MaximizeBox = $false
-$form.BackColor = $cArka
-$form.Font = New-Object System.Drawing.Font("Segoe UI", 10)
+$form.MaximizeBox     = $false
+$form.BackColor       = $cArka
+$form.Font            = New-Object System.Drawing.Font("Segoe UI", 10)
 
-# Pencere ikonu - once logo.ico, yoksa logo.jpg'den uret (titlebar + gorev cubugu)
 try {
   $icoYol = Join-Path $kok 'public\logo.ico'
   $jpgYol = Join-Path $kok 'public\logo.jpg'
-  if (Test-Path $icoYol) {
-    $form.Icon = New-Object System.Drawing.Icon($icoYol)
-  } elseif (Test-Path $jpgYol) {
-    $logoBmp = New-Object System.Drawing.Bitmap $jpgYol
-    $form.Icon = [System.Drawing.Icon]::FromHandle($logoBmp.GetHicon())
-  }
+  if     (Test-Path $icoYol) { $form.Icon = New-Object System.Drawing.Icon($icoYol) }
+  elseif (Test-Path $jpgYol) { $bmp = New-Object System.Drawing.Bitmap $jpgYol; $form.Icon = [System.Drawing.Icon]::FromHandle($bmp.GetHicon()) }
 } catch {}
 
-# Baslik
-$baslik = New-Object System.Windows.Forms.Label
-$baslik.Text = "QUESTO"
-$baslik.ForeColor = $cYazi
-$baslik.Font = New-Object System.Drawing.Font("Segoe UI", 18, [System.Drawing.FontStyle]::Bold)
-$baslik.Location = New-Object System.Drawing.Point(20, 16)
-$baslik.Size = New-Object System.Drawing.Size(360, 34)
-$baslik.TextAlign = 'MiddleCenter'
-$form.Controls.Add($baslik)
+# ---------------------------------------------------------------------------
+# Yardimci: ayirici cizgi
+# ---------------------------------------------------------------------------
+function Ayirici($y) {
+  $p = New-Object System.Windows.Forms.Panel
+  $p.Location  = New-Object System.Drawing.Point(20, $y)
+  $p.Size      = New-Object System.Drawing.Size(400, 1)
+  $p.BackColor = $cKenar
+  $form.Controls.Add($p)
+}
 
-# Genel durum belirteci
+# ---------------------------------------------------------------------------
+# Baslik bolumu
+# ---------------------------------------------------------------------------
+$lblBaslik = New-Object System.Windows.Forms.Label
+$lblBaslik.Text      = "QUESTO"
+$lblBaslik.ForeColor = $cYazi
+$lblBaslik.Font      = New-Object System.Drawing.Font("Segoe UI", 20, [System.Drawing.FontStyle]::Bold)
+$lblBaslik.Location  = New-Object System.Drawing.Point(20, 18)
+$lblBaslik.Size      = New-Object System.Drawing.Size(400, 36)
+$lblBaslik.TextAlign = 'MiddleCenter'
+$form.Controls.Add($lblBaslik)
+
+$lblAltyazi = New-Object System.Windows.Forms.Label
+$lblAltyazi.Text      = "Restoran Yonetim Sistemi"
+$lblAltyazi.ForeColor = $cMuted
+$lblAltyazi.Font      = New-Object System.Drawing.Font("Segoe UI", 9)
+$lblAltyazi.Location  = New-Object System.Drawing.Point(20, 56)
+$lblAltyazi.Size      = New-Object System.Drawing.Size(400, 18)
+$lblAltyazi.TextAlign = 'MiddleCenter'
+$form.Controls.Add($lblAltyazi)
+
+Ayirici 82
+
+# ---------------------------------------------------------------------------
+# Durum cubugu
+# ---------------------------------------------------------------------------
 $genel = New-Object System.Windows.Forms.Label
-$genel.Text = "Kontrol ediliyor..."
+$genel.Text      = "Kontrol ediliyor..."
 $genel.ForeColor = [System.Drawing.Color]::White
 $genel.BackColor = $cTuruncu
-$genel.Font = New-Object System.Drawing.Font("Segoe UI", 12, [System.Drawing.FontStyle]::Bold)
-$genel.Location = New-Object System.Drawing.Point(20, 56)
-$genel.Size = New-Object System.Drawing.Size(360, 44)
+$genel.Font      = New-Object System.Drawing.Font("Segoe UI", 12, [System.Drawing.FontStyle]::Bold)
+$genel.Location  = New-Object System.Drawing.Point(20, 90)
+$genel.Size      = New-Object System.Drawing.Size(400, 44)
 $genel.TextAlign = 'MiddleCenter'
 $form.Controls.Add($genel)
 
-# Durum icin izlenen portlar (UI'da satir gosterilmez, sadece genel durumu belirler)
-$portlar = @(3000, 8080, 9099)
+Ayirici 142
 
-# --- Asenkron port kontrol (UI thread'ini KILITLEMEZ) ---
-# BeginConnect ile baglantilar baslatilir ve bir SONRAKI tikte WaitOne
-# YAPILMADAN IsCompleted/EndConnect ile okunur. Boylece her tik anliktir.
+# ---------------------------------------------------------------------------
+# Port kontrolu (asenkron, UI thread kilitlemez)
+# ---------------------------------------------------------------------------
+$portlar            = @(3000, 8080, 9099)
 $script:baglantilar = @()
 
-# Onceki tikte baslatilan baglantilarin sonucunu (bloke etmeden) oku.
 function SonuclariOku {
   if ($script:baglantilar.Count -eq 0) { return }
-  $acikSayisi = 0
+  $acik = 0
   foreach ($b in $script:baglantilar) {
-    $acik = $false
+    $ok = $false
     try {
-      if ($b.iar -and $b.iar.IsCompleted) {
-        $b.client.EndConnect($b.iar)   # acik degilse exception firlatir
-        $acik = $b.client.Connected
-      }
-    } catch { $acik = $false } finally { $b.client.Close() }
-    if ($acik) { $acikSayisi++ }
+      if ($b.iar -and $b.iar.IsCompleted) { $b.client.EndConnect($b.iar); $ok = $b.client.Connected }
+    } catch { $ok = $false } finally { $b.client.Close() }
+    if ($ok) { $acik++ }
   }
-  if ($acikSayisi -eq $script:baglantilar.Count) {
-    $genel.Text = "SISTEM CALISIYOR"; $genel.BackColor = $cYesil
-    # Calisiyorken Baslat KILITLI (tekrar baslatip calisani bozmasin), Durdur acik.
+  if ($acik -eq $script:baglantilar.Count) {
+    $genel.Text = "SISTEM CALISIYOR";  $genel.BackColor = $cYesil
     $btnBaslat.Enabled = $false; $btnDurdur.Enabled = $true
-  } elseif ($acikSayisi -eq 0) {
-    $genel.Text = "SISTEM KAPALI"; $genel.BackColor = $cKirmizi
-    $btnBaslat.Enabled = $true; $btnDurdur.Enabled = $false
+  } elseif ($acik -eq 0) {
+    $genel.Text = "SISTEM KAPALI";    $genel.BackColor = $cKirmizi
+    $btnBaslat.Enabled = $true;  $btnDurdur.Enabled = $false
   } else {
-    $genel.Text = "KISMEN CALISIYOR ($acikSayisi/$($script:baglantilar.Count))"
+    $genel.Text = "KISMEN CALISIYOR ($acik/$($script:baglantilar.Count))"
     $genel.BackColor = $cTuruncu
     $btnBaslat.Enabled = $true; $btnDurdur.Enabled = $true
   }
 }
 
-# Yeni (asenkron) baglantilari baslat — UI thread'i beklemez.
 function KontrolBaslat {
   $yeni = @()
   foreach ($p in $portlar) {
@@ -141,174 +154,175 @@ function KontrolBaslat {
   $script:baglantilar = $yeni
 }
 
-# Bir tik: once onceki sonucu oku, sonra yeni kontrolu baslat.
-# Her tikde IP degisip degismedigini kontrol et; degistiyse veya 30 sn gectiyse AdresGuncelle.
 function Tazele {
   SonuclariOku; KontrolBaslat
-  $script:pcAd = $env:COMPUTERNAME
   $script:ipGuncellemeSayac++
   if ($script:ipGuncellemeSayac -ge 12) {
-    $script:ipGuncellemeSayac = 0; AdresGuncelle
+    $script:ipGuncellemeSayac = 0
+    AdresGuncelle
   } else {
     $yeniIp = YerelIP
     if ($yeniIp -ne $script:yerelIpCache) { AdresGuncelle }
-    else { $lblAdresPcAd.Text = "Bilgisayar adi: $(AdresSabit)" }
   }
 }
 
-# --- Buton uretici ---
-function Buton($metin, $x, $w, $renk) {
+# ---------------------------------------------------------------------------
+# Buton uretici
+# ---------------------------------------------------------------------------
+function YapButon($metin, $x, $y, $w, $h, $arka, $font, $kenar) {
   $b = New-Object System.Windows.Forms.Button
-  $b.Text = $metin
-  $b.Location = New-Object System.Drawing.Point($x, 116)
-  $b.Size = New-Object System.Drawing.Size($w, 52)
-  $b.FlatStyle = 'Flat'
-  $b.FlatAppearance.BorderSize = 0
-  $b.ForeColor = [System.Drawing.Color]::White
-  $b.BackColor = $renk
-  $b.Font = New-Object System.Drawing.Font("Segoe UI", 11, [System.Drawing.FontStyle]::Bold)
-  $b.Cursor = [System.Windows.Forms.Cursors]::Hand
+  $b.Text       = $metin
+  $b.Location   = New-Object System.Drawing.Point($x, $y)
+  $b.Size       = New-Object System.Drawing.Size($w, $h)
+  $b.FlatStyle  = 'Flat'
+  $b.ForeColor  = $cYazi
+  $b.BackColor  = $arka
+  $b.Font       = $font
+  $b.Cursor     = [System.Windows.Forms.Cursors]::Hand
+  $b.FlatAppearance.BorderSize = if ($kenar) { 1 } else { 0 }
+  if ($kenar) {
+    $b.FlatAppearance.BorderColor       = $cKenar
+    $b.FlatAppearance.MouseOverBackColor = [System.Drawing.Color]::FromArgb(63, 63, 70)
+  }
   $form.Controls.Add($b)
   return $b
 }
 
-$btnBaslat = Buton "Baslat" 20 172 $cYesil
-$btnDurdur = Buton "Durdur" 208 172 $cKirmizi
+$fBold = New-Object System.Drawing.Font("Segoe UI", 11, [System.Drawing.FontStyle]::Bold)
+$fNorm = New-Object System.Drawing.Font("Segoe UI", 9)
+
+# ---------------------------------------------------------------------------
+# Ana aksiyon butonlari
+# ---------------------------------------------------------------------------
+$btnBaslat  = YapButon "Baslat"          20 150 190 50 $cYesil   $fBold $false
+$btnDurdur  = YapButon "Durdur"         230 150 190 50 $cKirmizi $fBold $false
+$btnYenile  = YapButon "Durumu yenile"   20 208 190 36 $cKart    $fNorm $true
+$btnYeniden = YapButon "Yeniden baslat" 230 208 190 36 $cKart    $fNorm $true
 
 $btnBaslat.Add_Click({
-  if (-not $baslatBat) {
-    [System.Windows.Forms.MessageBox]::Show("Baslatma .bat dosyasi bulunamadi.", "Questo") | Out-Null
-    return
-  }
+  if (-not $baslatBat) { [System.Windows.Forms.MessageBox]::Show("Baslatma .bat bulunamadi.", "Questo") | Out-Null; return }
   Start-Process -FilePath $baslatBat -WorkingDirectory $kok
-  $genel.Text = "BASLATILIYOR..."
-  $genel.BackColor = $cTuruncu
-  # Cift tiklamayi onle - durum yenilenince kontrol tekrar buton durumunu ayarlar.
+  $genel.Text = "BASLATILIYOR..."; $genel.BackColor = $cTuruncu
   $btnBaslat.Enabled = $false
 })
 
 $btnDurdur.Add_Click({
-  if (-not $durdurBat) {
-    [System.Windows.Forms.MessageBox]::Show("Durdurma .bat dosyasi bulunamadi.", "Questo") | Out-Null
-    return
-  }
+  if (-not $durdurBat) { [System.Windows.Forms.MessageBox]::Show("Durdurma .bat bulunamadi.", "Questo") | Out-Null; return }
   Start-Process -FilePath $durdurBat -WorkingDirectory $kok
-  $genel.Text = "DURDURULUYOR..."
-  $genel.BackColor = $cTuruncu
+  $genel.Text = "DURDURULUYOR..."; $genel.BackColor = $cTuruncu
   $btnDurdur.Enabled = $false
 })
 
-# Alt satir: Durumu yenile + Yeniden baslat
-$btnYenile = New-Object System.Windows.Forms.Button
-$btnYenile.Text = "Durumu yenile"
-$btnYenile.Location = New-Object System.Drawing.Point(20, 180)
-$btnYenile.Size = New-Object System.Drawing.Size(172, 38)
-$btnYenile.FlatStyle = 'Flat'
-$btnYenile.FlatAppearance.BorderSize = 1
-$btnYenile.ForeColor = $cYazi
-$btnYenile.BackColor = $cKart
-$btnYenile.Cursor = [System.Windows.Forms.Cursors]::Hand
 $btnYenile.Add_Click({ Tazele; AdresGuncelle; $btnKopya.Text = "IP'yi kopyala" })
-$form.Controls.Add($btnYenile)
 
-$btnYeniden = New-Object System.Windows.Forms.Button
-$btnYeniden.Text = "Yeniden baslat"
-$btnYeniden.Location = New-Object System.Drawing.Point(208, 180)
-$btnYeniden.Size = New-Object System.Drawing.Size(172, 38)
-$btnYeniden.FlatStyle = 'Flat'
-$btnYeniden.FlatAppearance.BorderSize = 1
-$btnYeniden.ForeColor = $cYazi
-$btnYeniden.BackColor = $cKart
-$btnYeniden.Cursor = [System.Windows.Forms.Cursors]::Hand
 $btnYeniden.Add_Click({
-  if (-not $durdurBat -or -not $baslatBat) {
-    [System.Windows.Forms.MessageBox]::Show("Baslatma/durdurma .bat dosyasi bulunamadi.", "Questo") | Out-Null
-    return
-  }
-  $genel.Text = "YENIDEN BASLATILIYOR..."
-  $genel.BackColor = $cTuruncu
-  # Once durdur (bitmesini bekle), sonra yeniden baslat.
+  if (-not $durdurBat -or -not $baslatBat) { [System.Windows.Forms.MessageBox]::Show("Baslatma/durdurma .bat bulunamadi.", "Questo") | Out-Null; return }
+  $genel.Text = "YENIDEN BASLATILIYOR..."; $genel.BackColor = $cTuruncu
   Start-Process -FilePath $durdurBat -WorkingDirectory $kok -Wait
   Start-Process -FilePath $baslatBat -WorkingDirectory $kok
 })
-$form.Controls.Add($btnYeniden)
 
-# --- Telefon erisim adresi paneli ---
-$lblAdresBaslik = New-Object System.Windows.Forms.Label
-$lblAdresBaslik.Text = "Telefondan baglan (ayni Wi-Fi):"
-$lblAdresBaslik.ForeColor = $cYazi
-$lblAdresBaslik.Location = New-Object System.Drawing.Point(20, 230)
-$lblAdresBaslik.Size = New-Object System.Drawing.Size(190, 20)
-$form.Controls.Add($lblAdresBaslik)
+Ayirici 252
 
-# IP adresi - BIRINCIL (buyuk, yesil) — bilgisayar adi degisse de calisir
-$lblAdresSabit = New-Object System.Windows.Forms.Label
-$lblAdresSabit.Text = "Yukleniyor..."
-$lblAdresSabit.ForeColor = $cYesil
-$lblAdresSabit.Font = New-Object System.Drawing.Font("Consolas", 12, [System.Drawing.FontStyle]::Bold)
-$lblAdresSabit.Location = New-Object System.Drawing.Point(20, 253)
-$lblAdresSabit.Size = New-Object System.Drawing.Size(190, 24)
-$form.Controls.Add($lblAdresSabit)
+# ---------------------------------------------------------------------------
+# Telefon baglantisi bolumu (sol: IP + buton | sag: QR)
+# ---------------------------------------------------------------------------
 
-# Bilgisayar adi - yedek (kucuk, gri) — her tikde guncellenir
-$lblAdresPcAd = New-Object System.Windows.Forms.Label
-$lblAdresPcAd.Text = "Bilgisayar adi: $(AdresSabit)"
-$lblAdresPcAd.ForeColor = [System.Drawing.Color]::FromArgb(161, 161, 170)
-$lblAdresPcAd.Font = New-Object System.Drawing.Font("Consolas", 9)
-$lblAdresPcAd.Location = New-Object System.Drawing.Point(20, 281)
-$lblAdresPcAd.Size = New-Object System.Drawing.Size(190, 18)
-$form.Controls.Add($lblAdresPcAd)
+# Sol: baslik
+$bolumBar = New-Object System.Windows.Forms.Panel
+$bolumBar.Location  = New-Object System.Drawing.Point(20, 264)
+$bolumBar.Size      = New-Object System.Drawing.Size(3, 18)
+$bolumBar.BackColor = $cYesil
+$form.Controls.Add($bolumBar)
 
-$btnKopya = New-Object System.Windows.Forms.Button
-$btnKopya.Text = "IP'yi kopyala"
-$btnKopya.Location = New-Object System.Drawing.Point(20, 304)
-$btnKopya.Size = New-Object System.Drawing.Size(190, 36)
-$btnKopya.FlatStyle = 'Flat'
-$btnKopya.FlatAppearance.BorderSize = 1
-$btnKopya.ForeColor = $cYazi
-$btnKopya.BackColor = $cKart
-$btnKopya.Cursor = [System.Windows.Forms.Cursors]::Hand
+$lblBolum = New-Object System.Windows.Forms.Label
+$lblBolum.Text      = "TELEFON BAGLANTISI"
+$lblBolum.ForeColor = $cMuted
+$lblBolum.Font      = New-Object System.Drawing.Font("Segoe UI", 8, [System.Drawing.FontStyle]::Bold)
+$lblBolum.Location  = New-Object System.Drawing.Point(28, 264)
+$lblBolum.Size      = New-Object System.Drawing.Size(186, 18)
+$form.Controls.Add($lblBolum)
+
+# Sol: IP adresi
+$lblIP = New-Object System.Windows.Forms.Label
+$lblIP.Text      = "Yukleniyor..."
+$lblIP.ForeColor = $cYesil
+$lblIP.Font      = New-Object System.Drawing.Font("Consolas", 12, [System.Drawing.FontStyle]::Bold)
+$lblIP.Location  = New-Object System.Drawing.Point(20, 288)
+$lblIP.Size      = New-Object System.Drawing.Size(196, 24)
+$form.Controls.Add($lblIP)
+
+# Sol: kopyala butonu
+$btnKopya = YapButon "IP'yi kopyala" 20 318 196 36 $cMaviArka $fNorm $false
+$btnKopya.FlatAppearance.BorderSize  = 1
+$btnKopya.FlatAppearance.BorderColor = $cMavi
+$btnKopya.FlatAppearance.MouseOverBackColor = [System.Drawing.Color]::FromArgb(30, 64, 175)
+$btnKopya.ForeColor = [System.Drawing.Color]::FromArgb(147, 197, 253)
 $btnKopya.Add_Click({
   $ip = YerelIP
-  $u = if ($ip) { "http://$($ip):3000" } else { AdresSabit }
+  $u  = if ($ip) { "http://$($ip):3000" } else { $null }
+  if (-not $u) { return }
   try { [System.Windows.Forms.Clipboard]::SetText($u) }
   catch { try { Set-Clipboard -Value $u } catch {} }
   $btnKopya.Text = "Kopyalandi!"
 })
-$form.Controls.Add($btnKopya)
 
+# Sol: ipucu
 $lblIpucu = New-Object System.Windows.Forms.Label
-$lblIpucu.Text = "IP degisirse 'Durumu yenile' ile guncelle."
-$lblIpucu.ForeColor = [System.Drawing.Color]::FromArgb(161, 161, 170)
-$lblIpucu.Font = New-Object System.Drawing.Font("Segoe UI", 8)
-$lblIpucu.Location = New-Object System.Drawing.Point(20, 346)
-$lblIpucu.Size = New-Object System.Drawing.Size(190, 32)
+$lblIpucu.Text      = "IP degisirse Durumu yenile ile guncelle."
+$lblIpucu.ForeColor = $cMuted
+$lblIpucu.Font      = New-Object System.Drawing.Font("Segoe UI", 8)
+$lblIpucu.Location  = New-Object System.Drawing.Point(20, 362)
+$lblIpucu.Size      = New-Object System.Drawing.Size(196, 32)
 $form.Controls.Add($lblIpucu)
 
-# QR kod (sag taraf) — telefonda tarayiciya girmeden tara
+# Sag: QR baslik
+$qrBar = New-Object System.Windows.Forms.Panel
+$qrBar.Location  = New-Object System.Drawing.Point(228, 264)
+$qrBar.Size      = New-Object System.Drawing.Size(3, 18)
+$qrBar.BackColor = $cMavi
+$form.Controls.Add($qrBar)
+
 $lblQrBaslik = New-Object System.Windows.Forms.Label
-$lblQrBaslik.Text = "QR kodu tara:"
-$lblQrBaslik.ForeColor = [System.Drawing.Color]::FromArgb(161, 161, 170)
-$lblQrBaslik.Font = New-Object System.Drawing.Font("Segoe UI", 8)
-$lblQrBaslik.Location = New-Object System.Drawing.Point(220, 230)
-$lblQrBaslik.Size = New-Object System.Drawing.Size(160, 18)
+$lblQrBaslik.Text      = "QR KODU TARA"
+$lblQrBaslik.ForeColor = $cMuted
+$lblQrBaslik.Font      = New-Object System.Drawing.Font("Segoe UI", 8, [System.Drawing.FontStyle]::Bold)
+$lblQrBaslik.Location  = New-Object System.Drawing.Point(236, 264)
+$lblQrBaslik.Size      = New-Object System.Drawing.Size(184, 18)
 $form.Controls.Add($lblQrBaslik)
 
-$picQR = New-Object System.Windows.Forms.PictureBox
-$picQR.Location = New-Object System.Drawing.Point(220, 250)
-$picQR.Size = New-Object System.Drawing.Size(160, 160)
-$picQR.SizeMode = [System.Windows.Forms.PictureBoxSizeMode]::Zoom
-$picQR.BackColor = [System.Drawing.Color]::White
-$form.Controls.Add($picQR)
+# Sag: QR resim cercevesi
+$qrCerceve = New-Object System.Windows.Forms.Panel
+$qrCerceve.Location  = New-Object System.Drawing.Point(228, 288)
+$qrCerceve.Size      = New-Object System.Drawing.Size(192, 192)
+$qrCerceve.BackColor = [System.Drawing.Color]::FromArgb(63, 63, 70)
+$form.Controls.Add($qrCerceve)
 
-# IP ve bilgisayar adini guncelle — acilista ve her ~30 sn'de bir cagrilir.
+$picQR = New-Object System.Windows.Forms.PictureBox
+$picQR.Location  = New-Object System.Drawing.Point(2, 2)
+$picQR.Size      = New-Object System.Drawing.Size(188, 188)
+$picQR.SizeMode  = [System.Windows.Forms.PictureBoxSizeMode]::Zoom
+$picQR.BackColor = [System.Drawing.Color]::White
+$qrCerceve.Controls.Add($picQR)
+
+# Sag: QR ipucu
+$lblQrIpucu = New-Object System.Windows.Forms.Label
+$lblQrIpucu.Text      = "Tara, ana ekrana ekle"
+$lblQrIpucu.ForeColor = $cMuted
+$lblQrIpucu.Font      = New-Object System.Drawing.Font("Segoe UI", 8)
+$lblQrIpucu.Location  = New-Object System.Drawing.Point(228, 484)
+$lblQrIpucu.Size      = New-Object System.Drawing.Size(192, 16)
+$lblQrIpucu.TextAlign = 'MiddleCenter'
+$form.Controls.Add($lblQrIpucu)
+
+# ---------------------------------------------------------------------------
+# Adres ve QR guncelleme
+# ---------------------------------------------------------------------------
 function AdresGuncelle {
   $ip = YerelIP
   $script:yerelIpCache = $ip
-  if ($ip) { $lblAdresSabit.Text = "http://$($ip):3000" }
-  else { $lblAdresSabit.Text = "(IP bulunamadi - Wi-Fi bagli mi?)" }
-  $lblAdresPcAd.Text = "Bilgisayar adi: $(AdresSabit)"
-  # QR kod olustur
+  if ($ip) { $lblIP.Text = "http://$($ip):3000" }
+  else     { $lblIP.Text = "(Wi-Fi bagli degil)" }
   if ($ip) {
     try {
       $qrScript = Join-Path $PSScriptRoot 'qr-uret.mjs'
@@ -326,7 +340,9 @@ function AdresGuncelle {
   }
 }
 
-# Otomatik yenileme (canli durum)
+# ---------------------------------------------------------------------------
+# Timer ve baslatma
+# ---------------------------------------------------------------------------
 $timer = New-Object System.Windows.Forms.Timer
 $timer.Interval = 2500
 $timer.Add_Tick({ Tazele })
