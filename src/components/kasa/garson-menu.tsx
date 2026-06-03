@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Minus, Plus, Search, Trash2, X } from 'lucide-react';
+import { Check, Minus, Plus, Search, Trash2, X } from 'lucide-react';
 import {
   collection,
   onSnapshot,
@@ -39,14 +39,14 @@ interface Props {
   masaId: string;
   masaAd: string;
   /**
-   * Sipariş gönderildikten sonra nereye dönülecek:
-   * - 'masalar'  → masa listesi (yeni sipariş akışı, varsayılan)
-   * - 'adisyon'  → açık adisyon detayı (mevcut adisyona ürün ekleme akışı)
+   * true  → mevcut adisyona ürün ekleme akışı (onay başlığı "Adisyona eklendi")
+   * false → yeni sipariş akışı (onay başlığı "Sipariş verildi")
+   * Her iki durumda da onay penceresinde "Tamam" → masa listesine döner.
    */
-  donusModu?: 'masalar' | 'adisyon';
+  eklemeMi?: boolean;
 }
 
-export function GarsonMenu({ masaId, masaAd, donusModu = 'masalar' }: Props) {
+export function GarsonMenu({ masaId, masaAd, eklemeMi = false }: Props) {
   const router = useRouter();
   const [kategoriler, setKategoriler] = useState<Kategori[]>([]);
   const [urunler, setUrunler] = useState<Urun[]>([]);
@@ -58,6 +58,11 @@ export function GarsonMenu({ masaId, masaAd, donusModu = 'masalar' }: Props) {
   const [opsiyonUrun, setOpsiyonUrun] = useState<Urun | null>(null);
   const [gonderiliyor, setGonderiliyor] = useState(false);
   const [sepetAcik, setSepetAcik] = useState(false);
+  // Sipariş başarıyla gönderilince açılan onay penceresi (ne sipariş edildi).
+  const [onay, setOnay] = useState<{
+    kalemler: SepetKalemi[];
+    toplamKurus: number;
+  } | null>(null);
   const satirSayaci = useRef(0);
 
   useEffect(() => {
@@ -318,23 +323,24 @@ export function GarsonMenu({ masaId, masaAd, donusModu = 'masalar' }: Props) {
       if (!res.ok || !j.ok || !j.adisyonId) {
         throw new Error(j.mesaj ?? 'Sipariş gönderilemedi.');
       }
-      toast.success(`${masaAd}: ${sepetAdet} kalem adisyona eklendi.`);
+      // Onay penceresini aç: ne sipariş edildiğini göster. "Tamam" deyince
+      // (onayKapat) masa listesine döneriz — yeni sipariş de, ekleme de aynı.
+      setOnay({ kalemler: sepet, toplamKurus: sepetTopla });
       setSepet([]);
-      // Mevcut adisyona ekleme akışında garsonu o adisyonun detayına geri götür;
-      // yeni sipariş akışında ise masa listesine (sıradaki masaya hızla geçsin).
-      if (donusModu === 'adisyon') {
-        router.replace(`/kasa/adisyonlar/${j.adisyonId}`);
-      } else {
-        router.replace('/kasa/masalar');
-      }
-      // Router cache'ini boşalt ki hedef sayfa yeni adisyon/siparişle güncel
-      // gelsin — yoksa sekme elle yenilenene kadar eski veri görünür.
-      router.refresh();
+      setSepetAcik(false);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Sipariş hatası.');
     } finally {
       setGonderiliyor(false);
     }
+  };
+
+  // Onay penceresinde "Tamam" → masa listesine dön ve listeyi tazele (yeni
+  // adisyon/sipariş güncel görünsün). Yeni sipariş ve ekleme akışı için ortak.
+  const onayKapat = () => {
+    setOnay(null);
+    router.replace('/kasa/masalar');
+    router.refresh();
   };
 
   if (yukleniyor || !authHazir) {
@@ -590,6 +596,79 @@ export function GarsonMenu({ masaId, masaAd, donusModu = 'masalar' }: Props) {
           onIptal={() => setOpsiyonUrun(null)}
           onEkle={opsiyonlaEkle}
         />
+      )}
+
+      {/* Sipariş onay penceresi — ne sipariş edildiğini gösterir; "Tamam"
+          deyince masa listesine döner. Dışarı tıklayarak kapanmaz (akış net). */}
+      {onay && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="siparis-onay-baslik"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4 backdrop-blur"
+        >
+          <div className="w-full max-w-sm space-y-4 rounded-2xl border bg-card p-5 shadow-lg">
+            <div className="flex flex-col items-center gap-2 text-center">
+              <span className="flex size-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
+                <Check className="size-7" strokeWidth={3} />
+              </span>
+              <div>
+                <h2
+                  id="siparis-onay-baslik"
+                  className="text-lg font-semibold"
+                >
+                  {eklemeMi ? 'Adisyona eklendi' : 'Sipariş verildi'}
+                </h2>
+                <p className="text-sm text-muted-foreground">{masaAd}</p>
+              </div>
+            </div>
+
+            <ul className="max-h-[40vh] space-y-1.5 overflow-y-auto border-y py-3 text-sm">
+              {onay.kalemler.map((k) => (
+                <li
+                  key={k.satirId}
+                  className="flex items-start justify-between gap-3"
+                >
+                  <span className="min-w-0">
+                    <span className="font-medium tabular-nums">
+                      {k.adet} ×
+                    </span>{' '}
+                    {k.ad}
+                    {k.secimler && k.secimler.length > 0 && (
+                      <span className="block text-xs text-muted-foreground">
+                        {k.secimler
+                          .map(
+                            (s) =>
+                              `${s.grupAd}: ${s.secenekler.map((x) => x.ad).join(', ')}`,
+                          )
+                          .join(' · ')}
+                      </span>
+                    )}
+                  </span>
+                  <span className="shrink-0 tabular-nums text-muted-foreground">
+                    {formatTL(k.birimFiyatKurus * k.adet)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Toplam</span>
+              <span className="text-base font-semibold tabular-nums">
+                {formatTL(onay.toplamKurus)}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={onayKapat}
+              autoFocus
+              className="min-h-[52px] w-full rounded-xl bg-primary px-4 text-lg font-bold text-primary-foreground shadow-soft transition active:scale-[0.98]"
+            >
+              Tamam
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -87,11 +87,7 @@ export default async function MasaSiparisSayfasi({
         </p>
       </div>
 
-      <GarsonMenu
-        masaId={masaId}
-        masaAd={masa.ad}
-        donusModu={ekleModu ? 'adisyon' : 'masalar'}
-      />
+      <GarsonMenu masaId={masaId} masaAd={masa.ad} eklemeMi={ekleModu} />
     </div>
   );
 }
