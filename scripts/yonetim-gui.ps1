@@ -30,6 +30,12 @@ function GizliCalistir($bat, $arg, $bekle) {
 $script:yerelIpCache      = $null
 $script:ipGuncellemeSayac = 0
 
+# Gecis (pending) durumu: Baslat/Durdur tiklaninca, hedefe ULASILANA kadar
+# "BASLATILIYOR/DURDURULUYOR" yazisi korunur; port-yoklama yazisi onu ezmesin.
+#   $null | 'baslat' (hedef: tum portlar acik) | 'durdur' (hedef: tum portlar kapali)
+$script:beklenen    = $null
+$script:bekleyenTik = 0
+
 function YerelIP {
   try {
     $c = Get-NetIPConfiguration -ErrorAction Stop |
@@ -220,14 +226,27 @@ function SonuclariOku {
     } catch {} finally { $b.client.Close() }
     if ($ok) { $acik++ }
   }
-  if ($acik -eq $script:baglantilar.Count) {
+  $toplam = $script:baglantilar.Count
+
+  # Bir gecis bekleniyorsa (Baslat/Durdur): hedefe ULASANA kadar gecis yazisini
+  # KORU. ~4 dk (96 tik x 2.5 sn) icinde ulasilmazsa - islem takilmis olabilir -
+  # vazgec ve gercek durumu goster.
+  if ($script:beklenen) {
+    $script:bekleyenTik++
+    $hedefVar = ($script:beklenen -eq 'baslat' -and $acik -eq $toplam) -or ($script:beklenen -eq 'durdur' -and $acik -eq 0)
+    if (-not $hedefVar -and $script:bekleyenTik -lt 96) { return }
+    $script:beklenen    = $null
+    $script:bekleyenTik = 0
+  }
+
+  if ($acik -eq $toplam) {
     $genel.Text = "SISTEM CALISIYOR"; $genel.BackColor = $cYesil
     $btnBaslat.Enabled = $false; $btnDurdur.Enabled = $true
   } elseif ($acik -eq 0) {
     $genel.Text = "SISTEM KAPALI";    $genel.BackColor = $cKirmizi
     $btnBaslat.Enabled = $true;  $btnDurdur.Enabled = $false
   } else {
-    $genel.Text = "KISMEN CALISIYOR ($acik/$($script:baglantilar.Count))"
+    $genel.Text = "KISMEN CALISIYOR ($acik/$toplam)"
     $genel.BackColor = $cTuruncu
     $btnBaslat.Enabled = $true; $btnDurdur.Enabled = $true
   }
@@ -258,17 +277,25 @@ function Tazele {
 $btnBaslat.Add_Click({
   if (-not $baslatBat) { [System.Windows.Forms.MessageBox]::Show("Baslatma .bat bulunamadi.", "Questo") | Out-Null; return }
   GizliCalistir $baslatBat 'gizli' $false
-  $genel.Text = "BASLATILIYOR..."; $genel.BackColor = $cTuruncu; $btnBaslat.Enabled = $false
+  $script:beklenen = 'baslat'; $script:bekleyenTik = 0
+  $genel.Text = "BASLATILIYOR..."; $genel.BackColor = $cTuruncu
+  $btnBaslat.Enabled = $false; $btnDurdur.Enabled = $false
 })
 $btnDurdur.Add_Click({
   if (-not $durdurBat) { [System.Windows.Forms.MessageBox]::Show("Durdurma .bat bulunamadi.", "Questo") | Out-Null; return }
   GizliCalistir $durdurBat $null $false
-  $genel.Text = "DURDURULUYOR..."; $genel.BackColor = $cTuruncu; $btnDurdur.Enabled = $false
+  $script:beklenen = 'durdur'; $script:bekleyenTik = 0
+  $genel.Text = "DURDURULUYOR..."; $genel.BackColor = $cTuruncu
+  $btnBaslat.Enabled = $false; $btnDurdur.Enabled = $false
 })
-$btnYenile.Add_Click({ Tazele; AdresGuncelle; $btnKopya.Text = "IP'yi kopyala" })
+# Durumu yenile: bekleme durumunu da temizle ki gercek port durumu hemen okunsun.
+$btnYenile.Add_Click({ $script:beklenen = $null; $script:bekleyenTik = 0; Tazele; AdresGuncelle; $btnKopya.Text = "IP'yi kopyala" })
 $btnYeniden.Add_Click({
   if (-not $durdurBat -or -not $baslatBat) { [System.Windows.Forms.MessageBox]::Show("Bat bulunamadi.", "Questo") | Out-Null; return }
+  $script:beklenen = 'baslat'; $script:bekleyenTik = 0
   $genel.Text = "YENIDEN BASLATILIYOR..."; $genel.BackColor = $cTuruncu
+  $btnBaslat.Enabled = $false; $btnDurdur.Enabled = $false
+  $genel.Refresh()
   GizliCalistir $durdurBat $null $true
   GizliCalistir $baslatBat 'gizli' $false
 })
