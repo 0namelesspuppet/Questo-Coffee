@@ -153,8 +153,8 @@ export function KasiyerBolme({
 
   return (
     <div className="space-y-3 rounded-lg border bg-card p-3">
-      <div className="flex items-center gap-2 text-sm font-semibold">
-        <Users className="size-4" />
+      <div className="flex items-center gap-2 text-base font-semibold">
+        <Users className="size-5" />
         Ödemeyi Al
       </div>
 
@@ -172,22 +172,22 @@ export function KasiyerBolme({
       ) : (
         <>
           {/* Sekme seçici */}
-          <div className="flex gap-1 rounded-lg bg-muted p-0.5">
+          <div className="flex gap-2 rounded-xl bg-muted p-1">
             {sekmeler.map((s) => (
-          <button
-            key={s.id}
-            type="button"
-            onClick={() => setAktifSekme(s.id)}
-            className={`flex-1 rounded-md px-1 py-1 text-center text-[11px] font-medium leading-tight transition-colors ${
-              aktifSekme === s.id
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground'
-            }`}
-          >
-            {s.etiket}
-          </button>
-        ))}
-      </div>
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => setAktifSekme(s.id)}
+                className={`flex min-h-[3.5rem] flex-1 items-center justify-center rounded-lg px-2 py-2 text-center text-sm font-semibold leading-tight transition-colors ${
+                  aktifSekme === s.id
+                    ? 'bg-background text-foreground shadow-sm ring-1 ring-border'
+                    : 'text-muted-foreground active:bg-background/50'
+                }`}
+              >
+                {s.etiket}
+              </button>
+            ))}
+          </div>
 
       {/* ─── Hesabı Öde (tüm masa tek seferde) ───────── */}
       {aktifSekme === 'tam' && (
@@ -206,7 +206,7 @@ export function KasiyerBolme({
             type="button"
             onClick={tamOde}
             disabled={!!yukleniyor}
-            className="w-full rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+            className="min-h-[56px] w-full rounded-xl bg-primary px-4 text-base font-bold text-primary-foreground shadow-soft transition active:scale-[0.98] disabled:opacity-50"
           >
             {yukleniyor ? '…' : `${formatTL(toplamKurus)} — Hesabı Öde`}
           </button>
@@ -217,25 +217,25 @@ export function KasiyerBolme({
       {aktifSekme === 'esit' && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Kişi sayısı</span>
+            <span className="text-base text-muted-foreground">Kişi sayısı</span>
             <div className="flex items-center gap-3">
               <button
                 type="button"
                 onClick={() => setKisiSayisi((k) => Math.max(1, k - 1))}
                 disabled={kisiSayisi <= 1}
-                className="flex size-7 items-center justify-center rounded-full border disabled:opacity-40"
+                className="flex size-11 items-center justify-center rounded-full border active:bg-secondary disabled:opacity-40"
               >
-                <Minus className="size-3.5" />
+                <Minus className="size-5" />
               </button>
-              <span className="w-6 text-center text-sm font-medium tabular-nums">
+              <span className="w-8 text-center text-lg font-semibold tabular-nums">
                 {kisiSayisi}
               </span>
               <button
                 type="button"
                 onClick={() => setKisiSayisi((k) => Math.min(20, k + 1))}
-                className="flex size-7 items-center justify-center rounded-full border"
+                className="flex size-11 items-center justify-center rounded-full border active:bg-secondary"
               >
-                <Plus className="size-3.5" />
+                <Plus className="size-5" />
               </button>
             </div>
           </div>
@@ -258,26 +258,26 @@ export function KasiyerBolme({
               return (
                 <div
                   key={i}
-                  className="flex items-center justify-between rounded-lg border px-3 py-2"
+                  className="flex items-center justify-between gap-2 rounded-lg border px-3 py-2.5"
                 >
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-base text-muted-foreground">
                     {i + 1}. kişi — {formatTL(kisiPayi)}
                   </span>
                   {odendi ? (
-                    <span className="flex items-center gap-1 text-xs text-emerald-700 dark:text-emerald-400">
-                      <Check className="size-3" /> Ödendi
+                    <span className="flex items-center gap-1 text-sm text-emerald-700 dark:text-emerald-400">
+                      <Check className="size-4" /> Ödendi
                     </span>
                   ) : aktif ? (
                     <button
                       type="button"
                       onClick={esitDilimOde}
                       disabled={!!yukleniyor}
-                      className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+                      className="min-h-[44px] rounded-lg bg-primary px-5 text-base font-bold text-primary-foreground shadow-soft transition active:scale-[0.98] disabled:opacity-50"
                     >
                       {yukleniyor ? '…' : 'Ödeme al'}
                     </button>
                   ) : (
-                    <span className="text-xs text-muted-foreground">bekliyor</span>
+                    <span className="text-sm text-muted-foreground">bekliyor</span>
                   )}
                 </div>
               );
@@ -295,10 +295,10 @@ export function KasiyerBolme({
             </p>
           ) : (
             <>
-              <ul className="max-h-56 space-y-0.5 overflow-y-auto">
+              <ul className="max-h-72 space-y-0.5 overflow-y-auto">
                 {aktifSiparisler.map((s) => (
                   <li key={s.id}>
-                    <p className="px-2 pt-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                    <p className="px-2 pt-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                       {s.musteriAd
                         ? `${s.musteriAd} — #${s.gunlukNo}`
                         : `Sipariş #${s.gunlukNo}`}
@@ -308,21 +308,21 @@ export function KasiyerBolme({
                       return (
                         <label
                           key={key}
-                          className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-muted/50"
+                          className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-3 transition-colors hover:bg-muted/50 active:bg-muted/60"
                         >
                           <input
                             type="checkbox"
                             checked={secili.has(key)}
                             onChange={() => toggleSecili(key)}
-                            className="size-4 rounded"
+                            className="size-6 rounded accent-primary"
                           />
-                          <span className="flex-1 text-sm">
+                          <span className="flex-1 text-base">
                             <span className="tabular-nums text-muted-foreground">
                               {k.adet}×
                             </span>{' '}
                             {k.ad}
                           </span>
-                          <span className="text-sm tabular-nums">
+                          <span className="text-base tabular-nums">
                             {formatTL(k.araToplamKurus)}
                           </span>
                         </label>
@@ -333,15 +333,15 @@ export function KasiyerBolme({
               </ul>
 
               {secili.size > 0 && (
-                <div className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2">
-                  <span className="text-sm font-medium">
+                <div className="flex items-center justify-between gap-2 rounded-lg bg-muted/50 px-3 py-2.5">
+                  <span className="text-lg font-semibold tabular-nums">
                     {formatTL(seciliToplam)}
                   </span>
                   <button
                     type="button"
                     onClick={urunOde}
                     disabled={!!yukleniyor}
-                    className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+                    className="min-h-[48px] rounded-lg bg-primary px-5 text-base font-bold text-primary-foreground shadow-soft transition active:scale-[0.98] disabled:opacity-50"
                   >
                     {yukleniyor ? '…' : 'Ödeme al'}
                   </button>
