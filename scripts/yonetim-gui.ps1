@@ -142,13 +142,18 @@ function KontrolBaslat {
 }
 
 # Bir tik: once onceki sonucu oku, sonra yeni kontrolu baslat.
-# Her tikde bilgisayar adini guncelle; IP'yi ise 12 tikde bir guncelle (~30 sn).
+# Her tikde IP degisip degismedigini kontrol et; degistiyse veya 30 sn gectiyse AdresGuncelle.
 function Tazele {
   SonuclariOku; KontrolBaslat
   $script:pcAd = $env:COMPUTERNAME
   $script:ipGuncellemeSayac++
-  if ($script:ipGuncellemeSayac -ge 12) { $script:ipGuncellemeSayac = 0; AdresGuncelle }
-  else { $lblAdresPcAd.Text = "Bilgisayar adi: $(AdresSabit)" }
+  if ($script:ipGuncellemeSayac -ge 12) {
+    $script:ipGuncellemeSayac = 0; AdresGuncelle
+  } else {
+    $yeniIp = YerelIP
+    if ($yeniIp -ne $script:yerelIpCache) { AdresGuncelle }
+    else { $lblAdresPcAd.Text = "Bilgisayar adi: $(AdresSabit)" }
+  }
 }
 
 # --- Buton uretici ---
