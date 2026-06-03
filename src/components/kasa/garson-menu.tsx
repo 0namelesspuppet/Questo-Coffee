@@ -534,13 +534,13 @@ export function GarsonMenu({ masaId, masaAd }: Props) {
             type="button"
             onClick={() => setSepetAcik(true)}
             disabled={sepet.length === 0}
-            className="flex min-h-[60px] flex-1 items-center justify-between gap-2 rounded-xl border bg-background px-4 py-3 text-left transition active:scale-[0.98] disabled:opacity-60"
+            className="flex min-h-[68px] flex-1 items-center justify-between gap-2 rounded-xl border bg-background px-4 py-3 text-left transition active:scale-[0.98] disabled:opacity-60"
             aria-label="Sepeti gör"
           >
-            <span className="text-base font-semibold">
+            <span className="text-lg font-semibold">
               {sepetAdet > 0 ? `${sepetAdet} kalem` : 'Sepet boş'}
             </span>
-            <span className="text-base tabular-nums text-muted-foreground">
+            <span className="text-lg tabular-nums text-muted-foreground">
               {formatTL(sepetTopla)}
             </span>
           </button>
@@ -548,7 +548,7 @@ export function GarsonMenu({ masaId, masaAd }: Props) {
             type="button"
             onClick={gonder}
             disabled={sepet.length === 0 || gonderiliyor}
-            className="min-h-[60px] min-w-[160px] rounded-xl bg-primary px-6 py-3.5 text-lg font-semibold text-primary-foreground shadow-soft transition active:scale-[0.97] disabled:opacity-40"
+            className="min-h-[68px] min-w-[160px] rounded-xl bg-primary px-6 py-3.5 text-xl font-semibold text-primary-foreground shadow-soft transition active:scale-[0.97] disabled:opacity-40"
           >
             {gonderiliyor ? 'Gönderiliyor…' : 'Sipariş Ver'}
           </button>
@@ -622,7 +622,7 @@ function UrunListesi({
                   urunEkle(u);
                 }
               }}
-              className="relative flex h-full min-h-[10rem] w-full cursor-pointer flex-col justify-between gap-3 rounded-xl border bg-card p-4 text-left shadow-soft transition active:bg-secondary/40 sm:min-h-[9rem]"
+              className="relative flex h-full min-h-[11rem] w-full cursor-pointer flex-col justify-between gap-3 rounded-xl border bg-card p-4 text-left shadow-soft transition active:bg-secondary/40 sm:min-h-[9rem]"
               aria-label={`${u.ad} ekle`}
             >
               <span className="block text-base font-semibold leading-snug line-clamp-3">
@@ -635,13 +635,13 @@ function UrunListesi({
                 {adet === 0 ? (
                   <span
                     aria-hidden="true"
-                    className="inline-flex h-12 min-w-12 shrink-0 items-center justify-center rounded-full bg-primary px-3 text-primary-foreground shadow-soft sm:h-11 sm:min-w-11"
+                    className="inline-flex h-14 min-w-14 shrink-0 items-center justify-center rounded-full bg-primary px-3 text-primary-foreground shadow-soft sm:h-11 sm:min-w-11"
                   >
-                    <Plus className="size-5" strokeWidth={3} />
+                    <Plus className="size-6" strokeWidth={3} />
                   </span>
                 ) : (
                   <div
-                    className="inline-flex h-12 shrink-0 items-center rounded-full bg-primary text-primary-foreground shadow-soft sm:h-11"
+                    className="inline-flex h-14 shrink-0 items-center rounded-full bg-primary text-primary-foreground shadow-soft sm:h-11"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <button
@@ -650,12 +650,12 @@ function UrunListesi({
                         e.stopPropagation();
                         urunCikar(u);
                       }}
-                      className="flex h-12 w-12 items-center justify-center rounded-l-full active:bg-primary/80 sm:h-11 sm:w-11"
+                      className="flex h-14 w-14 items-center justify-center rounded-l-full active:bg-primary/80 sm:h-11 sm:w-11"
                       aria-label={`${u.ad} azalt`}
                     >
-                      <Minus className="size-5" strokeWidth={3} />
+                      <Minus className="size-6" strokeWidth={3} />
                     </button>
-                    <span className="min-w-7 text-center text-base font-bold tabular-nums sm:min-w-6 sm:text-sm">
+                    <span className="min-w-8 text-center text-base font-bold tabular-nums sm:min-w-6 sm:text-sm">
                       {adet}
                     </span>
                     <button
@@ -664,10 +664,10 @@ function UrunListesi({
                         e.stopPropagation();
                         urunEkle(u);
                       }}
-                      className="flex h-12 w-12 items-center justify-center rounded-r-full active:bg-primary/80 sm:h-11 sm:w-11"
+                      className="flex h-14 w-14 items-center justify-center rounded-r-full active:bg-primary/80 sm:h-11 sm:w-11"
                       aria-label={`${u.ad} ekle`}
                     >
-                      <Plus className="size-5" strokeWidth={3} />
+                      <Plus className="size-6" strokeWidth={3} />
                     </button>
                   </div>
                 )}
