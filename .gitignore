@@ -31,6 +31,7 @@ public/logo.ico
 !Questo'yu Başlat.bat
 !Questo'yu Durdur.bat
 !Demo Veriyi Yukle.bat
+!Questo Yönetim.bat
 
 # Başlat.bat'ın gizli proseslerinin log çıktıları
 logs/

@@ -71,9 +71,12 @@ if (Test-Path $guiVbs) {
     $arg = '"' + $guiVbs + '"'
     $aciklama = 'Questo GUI penceresi (tiklanabilir Baslat/Durdur/Durum)'
 } else {
-    # Dosya adi Turkce 's' (Baslat'taki) icerebilir - gercek dosyayi bul.
-    $hedef = (Get-ChildItem -Path $kok -Filter '*Ba*lat.bat' -File | Select-Object -First 1).FullName
-    $aciklama = 'Questo sistemini baslat'
+    # Oncelik: Questo Yonetim.bat; yoksa Baslat.bat'a dus.
+    $hedef = (Get-ChildItem -Path $kok -Filter '*Y?netim.bat' -File | Select-Object -First 1).FullName
+    if (-not $hedef) {
+        $hedef = (Get-ChildItem -Path $kok -Filter '*Ba*lat.bat' -File | Select-Object -First 1).FullName
+    }
+    $aciklama = 'Questo yonetim paneli'
 }
 if (-not $hedef -or -not (Test-Path $hedef)) {
     Write-Error "Kisayol hedefi bulunamadi: $kok"
