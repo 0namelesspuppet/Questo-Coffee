@@ -49,11 +49,6 @@
       ]
     },
     {
-      "collectionGroup": "kullaniciAksiyonlari",
-      "queryScope": "COLLECTION",
-      "fields": [{ "fieldPath": "zaman", "order": "DESCENDING" }]
-    },
-    {
       "collectionGroup": "adisyonlar",
       "queryScope": "COLLECTION",
       "fields": [
