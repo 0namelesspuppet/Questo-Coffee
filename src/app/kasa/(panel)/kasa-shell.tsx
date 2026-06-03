@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { getClientAuth } from '@/lib/firebase/client';
@@ -35,13 +35,22 @@ const NAV: NavItem[] = [
   },
 ];
 
-const aktifMi = (mevcut: string, n: NavItem) =>
-  [n.yol, ...(n.altYollar ?? [])].some(
+const aktifMi = (mevcut: string, garsonModu: boolean, n: NavItem) => {
+  // Bir masadan açılan adisyon detayı (garson akışı, ?garson=1) kavramsal olarak
+  // "Masalar" sekmesine aittir. Kasiyerin "Adisyonlar" (ödeme) listesiyle
+  // karışmasın diye bu durumda Masalar sekmesini aktif say.
+  if (garsonModu && mevcut.startsWith('/kasa/adisyonlar/')) {
+    return n.yol === '/kasa/masalar';
+  }
+  return [n.yol, ...(n.altYollar ?? [])].some(
     (y) => mevcut === y || mevcut.startsWith(y + '/'),
   );
+};
 
 export function KasaShell({ kullanici, children }: Props) {
   const yol = usePathname();
+  const aramaParam = useSearchParams();
+  const garsonModu = aramaParam.get('garson') === '1';
   const [authHazir, setAuthHazir] = useState(false);
   const otoGirisCalisti = useRef(false);
 
@@ -96,7 +105,7 @@ export function KasaShell({ kullanici, children }: Props) {
                 href={n.yol}
                 className={cn(
                   'flex min-w-0 flex-1 basis-0 items-center justify-center rounded-md px-1 py-2 text-sm font-semibold leading-tight transition-colors',
-                  aktifMi(yol, n)
+                  aktifMi(yol, garsonModu, n)
                     ? 'bg-secondary text-secondary-foreground'
                     : 'text-muted-foreground active:bg-secondary/60',
                 )}
@@ -114,7 +123,7 @@ export function KasaShell({ kullanici, children }: Props) {
                 href={n.yol}
                 className={cn(
                   'rounded-md px-2.5 py-1',
-                  aktifMi(yol, n)
+                  aktifMi(yol, garsonModu, n)
                     ? 'bg-secondary text-secondary-foreground'
                     : 'text-muted-foreground hover:text-foreground',
                 )}

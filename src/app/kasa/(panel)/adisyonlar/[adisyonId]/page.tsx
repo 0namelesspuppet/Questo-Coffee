@@ -127,11 +127,11 @@ export default async function AdisyonDetay({
   return (
     <div className="mx-auto max-w-6xl p-4 space-y-4">
       <Link
-        href="/kasa/masalar"
+        href={garsonModu ? '/kasa/masalar' : '/kasa/adisyonlar'}
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground"
       >
         <ArrowLeft className="size-4" />
-        Masalar
+        {garsonModu ? 'Masalar' : 'Adisyonlar'}
       </Link>
 
       <div className="flex items-end justify-between gap-3">
