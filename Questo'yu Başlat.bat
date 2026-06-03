@@ -22,6 +22,20 @@ echo.
 echo   Questo baslatiliyor...
 echo.
 
+rem [0b/5] node_modules eksikse npm install calistir
+if not exist "node_modules\.bin\next.cmd" (
+    echo   [0/5] Bagimliliklar eksik, npm install calistiriliyor...
+    npm install
+    if errorlevel 1 (
+        echo.
+        echo   HATA: npm install basarisiz oldu.
+        pause
+        exit /b 1
+    )
+    echo   [0/5] Bagimliliklar yuklendi.
+    echo.
+)
+
 rem [1/5] Portlari temizle
 echo   [1/5] Portlar temizleniyor...
 call npm run kill-ports
