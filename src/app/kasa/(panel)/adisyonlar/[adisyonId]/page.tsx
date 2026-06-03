@@ -33,10 +33,17 @@ const R = (): string => {
 
 export default async function AdisyonDetay({
   params,
+  searchParams,
 }: {
   params: Promise<{ adisyonId: string }>;
+  searchParams: Promise<{ garson?: string }>;
 }) {
   const { adisyonId } = await params;
+  const { garson } = await searchParams;
+  // Garson modu (masalar listesinden ?garson=1 ile gelinince): yalnızca ne
+  // sipariş edildiğini göster + "Ürün Ekle". Ödeme alma / adisyon kapatma
+  // kasiyere özeldir (karışıklık olmasın diye) — bu modda gizlenir.
+  const garsonModu = garson === '1';
   const db = getAdminDb();
   const restoranId = R();
 
@@ -248,7 +255,7 @@ export default async function AdisyonDetay({
         })}
       </ul>
 
-      {acik && (
+      {acik && !garsonModu && (
         <KasiyerBolme
           adisyonId={adisyonId}
           toplamKurus={kalanToplam}
@@ -279,9 +286,13 @@ export default async function AdisyonDetay({
         />
       )}
 
-      <OdemeTalepleri adisyonId={adisyonId} talepler={talepler} />
+      {!garsonModu && (
+        <OdemeTalepleri adisyonId={adisyonId} talepler={talepler} />
+      )}
 
-      {acik && <AdisyonuKapatBtn adisyonId={adisyonId} kalanKurus={kalanToplam} />}
+      {acik && !garsonModu && (
+        <AdisyonuKapatBtn adisyonId={adisyonId} kalanKurus={kalanToplam} />
+      )}
     </div>
   );
 }

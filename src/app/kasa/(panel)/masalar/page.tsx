@@ -80,7 +80,7 @@ export default async function AdisyonlarSayfasi() {
                 <Link
                   href={
                     acik
-                      ? `/kasa/adisyonlar/${k.acikAdisyonId}`
+                      ? `/kasa/adisyonlar/${k.acikAdisyonId}?garson=1`
                       : `/kasa/masa/${k.masaId}`
                   }
                   className={
