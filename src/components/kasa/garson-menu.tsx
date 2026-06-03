@@ -443,10 +443,10 @@ export function GarsonMenu({ masaId, masaAd, eklemeMi = false }: Props) {
   );
 
   return (
-    <div className="grid gap-3 pb-28 sm:gap-4 lg:grid-cols-[1fr_280px] lg:pb-0">
-      <div className="space-y-2 sm:space-y-3">
+    <div className="grid gap-3 pb-32 sm:gap-4 lg:grid-cols-[1fr_280px] lg:pb-0">
+      <div className="min-w-0 space-y-2 sm:space-y-3">
         {/* Arama + kategoriler — mobilde sticky */}
-        <div className="sticky top-11 z-20 -mx-2 space-y-2 border-b border-transparent bg-background/95 px-2 pt-1 pb-2 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:static sm:top-auto sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-0">
+        <div className="sticky top-12 z-20 -mx-2 space-y-2 border-b border-transparent bg-background/95 px-2 pt-1 pb-2 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:static sm:top-auto sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-0">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <input
@@ -549,7 +549,7 @@ export function GarsonMenu({ masaId, masaAd, eklemeMi = false }: Props) {
             type="button"
             onClick={() => setSepetAcik(true)}
             disabled={sepet.length === 0}
-            className="flex min-h-[76px] flex-1 flex-col items-start justify-center gap-0.5 rounded-xl border bg-background px-4 py-2 text-left transition active:scale-[0.98] disabled:opacity-60"
+            className="flex min-h-[88px] flex-1 flex-col items-start justify-center gap-0.5 rounded-xl border bg-background px-4 py-2 text-left transition active:scale-[0.98] disabled:opacity-60"
             aria-label="Sepeti gör"
           >
             <span className="text-base font-semibold leading-tight">
@@ -563,7 +563,7 @@ export function GarsonMenu({ masaId, masaAd, eklemeMi = false }: Props) {
             type="button"
             onClick={gonder}
             disabled={sepet.length === 0 || gonderiliyor}
-            className="min-h-[76px] flex-[1.4] basis-0 rounded-xl bg-primary px-4 text-2xl font-bold text-primary-foreground shadow-soft transition active:scale-[0.97] disabled:opacity-40"
+            className="min-h-[88px] flex-[1.4] basis-0 rounded-xl bg-primary px-4 text-2xl font-bold text-primary-foreground shadow-soft transition active:scale-[0.97] disabled:opacity-40"
           >
             {gonderiliyor ? 'Gönderiliyor…' : 'Sipariş Ver'}
           </button>
@@ -695,7 +695,7 @@ function UrunListesi({
     );
   }
   return (
-    <ul className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-3">
+    <ul className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-3 xl:grid-cols-4">
       {urunler.map((u) => {
         const adet = urunAdedi(u.id);
         return (

@@ -24,7 +24,7 @@ export function BaglantiRozeti() {
       title="Çevrimiçi"
     >
       <Wifi className="size-3.5" />
-      Bağlı
+      <span className="hidden sm:inline">Bağlı</span>
     </span>
   ) : (
     <span

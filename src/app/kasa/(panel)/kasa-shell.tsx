@@ -70,7 +70,7 @@ export function KasaShell({ kullanici, children }: Props) {
         <div className="mx-auto flex max-w-6xl items-center gap-2 px-3 py-1.5 sm:gap-4 sm:px-4 sm:py-2">
           <Link
             href="/"
-            className="flex shrink-0 items-center gap-2 font-semibold"
+            className="hidden shrink-0 items-center gap-2 font-semibold sm:flex"
           >
             <span className="relative size-7 overflow-hidden rounded-full">
               <Image
@@ -87,7 +87,7 @@ export function KasaShell({ kullanici, children }: Props) {
           {/* Mobil: üst barı tam kaplayan sekme çubuğu — hamburger yok, hepsi
               tek dokunuşla görünür ve erişilebilir. */}
           <nav
-            className="flex flex-1 items-center gap-1 overflow-x-auto text-sm [scrollbar-width:none] sm:hidden [&::-webkit-scrollbar]:hidden"
+            className="flex flex-1 items-stretch gap-1.5 sm:hidden"
             aria-label="Bölümler"
           >
             {NAV.filter((n) => !n.sahipGerek || kullanici.sahip).map((n) => (
@@ -95,13 +95,13 @@ export function KasaShell({ kullanici, children }: Props) {
                 key={n.yol}
                 href={n.yol}
                 className={cn(
-                  'flex-1 whitespace-nowrap rounded-md px-2 py-1.5 text-center font-medium',
+                  'flex min-w-0 flex-1 basis-0 items-center justify-center rounded-md px-1 py-2 text-sm font-semibold leading-tight transition-colors',
                   aktifMi(yol, n)
                     ? 'bg-secondary text-secondary-foreground'
-                    : 'text-muted-foreground',
+                    : 'text-muted-foreground active:bg-secondary/60',
                 )}
               >
-                {n.etiket}
+                <span className="truncate">{n.etiket}</span>
               </Link>
             ))}
           </nav>
