@@ -5,6 +5,12 @@ title Questo - Baslatiliyor...
 color 06
 cd /d "%~dp0"
 
+rem Gizli mod: GUI/launcher bu .bat'i "gizli" argumaniyla cagirinca konsol
+rem penceresi YOKTUR; hata halinde "pause" sonsuza kadar bekleyip kilitlenir.
+rem Bu modda pause yerine kisa bir timeout ile cikariz (log dosyasina yazilir).
+set "GIZLI=0"
+if /i "%~1"=="gizli" set "GIZLI=1"
+
 rem [0/5] Ilk kurulum: .env.local yoksa ya da bossa yerel emulator sablonundan uret.
 rem GitHub'dan indirince .env.local gelmez (.gitignore'da). Bu adim olmadan seed
 rem "RESTORAN_ID eksik" ile coker ve uygulama emulatore baglanamaz.
@@ -29,7 +35,7 @@ if not exist "node_modules\.bin\next.cmd" (
     if errorlevel 1 (
         echo.
         echo   HATA: npm install basarisiz oldu.
-        pause
+        if "%GIZLI%"=="1" ( timeout /t 8 /nobreak >nul ) else ( pause )
         exit /b 1
     )
     echo   [0/5] Bagimliliklar yuklendi.
@@ -73,7 +79,7 @@ if errorlevel 1 (
     echo.
     echo   HATA: Next.js 150 saniye icinde baslamadi.
     echo   Log: %LOG%\nextjs.log
-    pause
+    if "%GIZLI%"=="1" ( timeout /t 8 /nobreak >nul ) else ( pause )
     exit /b 1
 )
 

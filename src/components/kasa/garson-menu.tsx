@@ -36,12 +36,17 @@ interface SepetKalemi {
 }
 
 interface Props {
-  /** Sipariş gönderildikten sonra adisyona dönüş; verilmezse /kasa/adisyonlar/<id> */
   masaId: string;
   masaAd: string;
+  /**
+   * Sipariş gönderildikten sonra nereye dönülecek:
+   * - 'masalar'  → masa listesi (yeni sipariş akışı, varsayılan)
+   * - 'adisyon'  → açık adisyon detayı (mevcut adisyona ürün ekleme akışı)
+   */
+  donusModu?: 'masalar' | 'adisyon';
 }
 
-export function GarsonMenu({ masaId, masaAd }: Props) {
+export function GarsonMenu({ masaId, masaAd, donusModu = 'masalar' }: Props) {
   const router = useRouter();
   const [kategoriler, setKategoriler] = useState<Kategori[]>([]);
   const [urunler, setUrunler] = useState<Urun[]>([]);
@@ -315,10 +320,14 @@ export function GarsonMenu({ masaId, masaAd }: Props) {
       }
       toast.success(`${masaAd}: ${sepetAdet} kalem adisyona eklendi.`);
       setSepet([]);
-      // Sipariş alındıktan sonra garsonu masaların listelendiği sekmeye geri
-      // götür — böylece sıradaki masaya hızlıca geçebilir.
-      router.replace('/kasa/masalar');
-      // Router cache'ini boşalt ki masalar sayfası yeni adisyon/siparişle güncel
+      // Mevcut adisyona ekleme akışında garsonu o adisyonun detayına geri götür;
+      // yeni sipariş akışında ise masa listesine (sıradaki masaya hızla geçsin).
+      if (donusModu === 'adisyon') {
+        router.replace(`/kasa/adisyonlar/${j.adisyonId}`);
+      } else {
+        router.replace('/kasa/masalar');
+      }
+      // Router cache'ini boşalt ki hedef sayfa yeni adisyon/siparişle güncel
       // gelsin — yoksa sekme elle yenilenene kadar eski veri görünür.
       router.refresh();
     } catch (e) {
@@ -420,7 +429,7 @@ export function GarsonMenu({ masaId, masaAd }: Props) {
         type="button"
         onClick={gonder}
         disabled={sepet.length === 0 || gonderiliyor}
-        className="min-h-[60px] w-full rounded-xl bg-primary px-4 py-3.5 text-lg font-semibold text-primary-foreground shadow-soft transition active:scale-[0.98] disabled:opacity-50 lg:min-h-[52px] lg:py-3 lg:text-base"
+        className="min-h-[64px] w-full rounded-xl bg-primary px-4 py-3.5 text-xl font-bold text-primary-foreground shadow-soft transition active:scale-[0.98] disabled:opacity-50 lg:min-h-[52px] lg:py-3 lg:text-base lg:font-semibold"
       >
         {gonderiliyor ? 'Gönderiliyor…' : 'Sipariş Ver'}
       </button>
@@ -428,7 +437,7 @@ export function GarsonMenu({ masaId, masaAd }: Props) {
   );
 
   return (
-    <div className="grid gap-3 pb-24 sm:gap-4 lg:grid-cols-[1fr_280px] lg:pb-0">
+    <div className="grid gap-3 pb-28 sm:gap-4 lg:grid-cols-[1fr_280px] lg:pb-0">
       <div className="space-y-2 sm:space-y-3">
         {/* Arama + kategoriler — mobilde sticky */}
         <div className="sticky top-11 z-20 -mx-2 space-y-2 border-b border-transparent bg-background/95 px-2 pt-1 pb-2 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:static sm:top-auto sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-0">
@@ -529,18 +538,18 @@ export function GarsonMenu({ masaId, masaAd }: Props) {
 
       {/* Mobil: alt sticky özet barı */}
       <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-card shadow-[0_-4px_12px_rgba(0,0,0,0.08)] lg:hidden">
-        <div className="mx-auto flex max-w-6xl items-stretch gap-2 px-3 py-3.5 pb-[max(0.875rem,env(safe-area-inset-bottom))]">
+        <div className="mx-auto flex max-w-6xl items-stretch gap-2.5 px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <button
             type="button"
             onClick={() => setSepetAcik(true)}
             disabled={sepet.length === 0}
-            className="flex min-h-[68px] flex-1 items-center justify-between gap-2 rounded-xl border bg-background px-4 py-3 text-left transition active:scale-[0.98] disabled:opacity-60"
+            className="flex min-h-[76px] flex-1 flex-col items-start justify-center gap-0.5 rounded-xl border bg-background px-4 py-2 text-left transition active:scale-[0.98] disabled:opacity-60"
             aria-label="Sepeti gör"
           >
-            <span className="text-lg font-semibold">
+            <span className="text-base font-semibold leading-tight">
               {sepetAdet > 0 ? `${sepetAdet} kalem` : 'Sepet boş'}
             </span>
-            <span className="text-lg tabular-nums text-muted-foreground">
+            <span className="text-lg tabular-nums leading-tight text-muted-foreground">
               {formatTL(sepetTopla)}
             </span>
           </button>
@@ -548,7 +557,7 @@ export function GarsonMenu({ masaId, masaAd }: Props) {
             type="button"
             onClick={gonder}
             disabled={sepet.length === 0 || gonderiliyor}
-            className="min-h-[68px] min-w-[160px] rounded-xl bg-primary px-6 py-3.5 text-xl font-semibold text-primary-foreground shadow-soft transition active:scale-[0.97] disabled:opacity-40"
+            className="min-h-[76px] flex-[1.4] basis-0 rounded-xl bg-primary px-4 text-2xl font-bold text-primary-foreground shadow-soft transition active:scale-[0.97] disabled:opacity-40"
           >
             {gonderiliyor ? 'Gönderiliyor…' : 'Sipariş Ver'}
           </button>

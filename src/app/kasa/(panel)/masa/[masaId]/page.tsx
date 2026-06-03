@@ -14,13 +14,20 @@ const R = (): string => {
 };
 
 // Henuz acik adisyonu olmayan masa icin yeni siparis baslangic sayfasi.
-// Adisyon olusurolusmaz GarsonMenu icinde /kasa/adisyonlar/<id>'ye yonlendirir.
+// Adisyon olusur olusmaz GarsonMenu icinde /kasa/adisyonlar/<id>'ye yonlendirir.
+//
+// ?ekle=1 → "mevcut adisyona urun ekle" modu: acik adisyon olsa bile adisyona
+// yonlendirmeyiz; menuyu acariz ki garson ayni masaya yeni urun ekleyebilsin.
+// Siparis gonderilince GarsonMenu adisyon detayina geri doner (donusModu).
 export default async function MasaSiparisSayfasi({
   params,
+  searchParams,
 }: {
   params: Promise<{ masaId: string }>;
+  searchParams: Promise<{ ekle?: string }>;
 }) {
   const { masaId } = await params;
+  const { ekle } = await searchParams;
   const db = getAdminDb();
   const restoranId = R();
 
@@ -32,14 +39,20 @@ export default async function MasaSiparisSayfasi({
   if (masa.aktifMi === false) notFound();
 
   // Bu masada zaten acik bir adisyon varsa o sayfaya yonlendir
+  // (ekle modunda yonlendirme; ayni masaya urun eklemeye devam ederiz).
   const acikSnap = await db
     .collection(`restoranlar/${restoranId}/adisyonlar`)
     .where('masaId', '==', masaId)
     .where('durum', '==', 'acik')
     .limit(1)
     .get();
-  if (!acikSnap.empty) {
-    redirect(`/kasa/adisyonlar/${acikSnap.docs[0]!.id}`);
+  const acikAdisyonId = acikSnap.empty ? null : acikSnap.docs[0]!.id;
+  // ?ekle=1 yalnizca GERCEKTEN acik bir adisyon varken "ekle" modudur. Adisyon
+  // bu arada kapanmissa ya da URL elle yazilmissa normal yeni-siparis akisina
+  // duseriz — boylece geri linki asla bos "/kasa/adisyonlar/" olmaz (kirik link yok).
+  const ekleModu = ekle === '1' && acikAdisyonId !== null;
+  if (acikAdisyonId !== null && !ekleModu) {
+    redirect(`/kasa/adisyonlar/${acikAdisyonId}`);
   }
 
   return (
@@ -47,30 +60,38 @@ export default async function MasaSiparisSayfasi({
       {/* Mobil: tek satır kompakt başlık */}
       <div className="flex items-center gap-2 sm:hidden">
         <Link
-          href="/kasa/masalar"
-          aria-label="Masalar"
+          href={ekleModu ? `/kasa/adisyonlar/${acikAdisyonId}` : '/kasa/masalar'}
+          aria-label={ekleModu ? 'Adisyona dön' : 'Masalar'}
           className="-ml-1 inline-flex size-8 items-center justify-center rounded-md text-muted-foreground active:bg-secondary"
         >
           <ArrowLeft className="size-4" />
         </Link>
         <h1 className="text-base font-semibold">{masa.ad}</h1>
-        <span className="text-xs text-muted-foreground">· yeni sipariş</span>
+        <span className="text-xs text-muted-foreground">
+          {ekleModu ? '· ürün ekle' : '· yeni sipariş'}
+        </span>
       </div>
 
       {/* Tablet/masaüstü: ayrıntılı başlık */}
       <div className="hidden sm:block">
         <Link
-          href="/kasa/masalar"
+          href={ekleModu ? `/kasa/adisyonlar/${acikAdisyonId}` : '/kasa/masalar'}
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground"
         >
           <ArrowLeft className="size-4" />
-          Masalar
+          {ekleModu ? 'Adisyon' : 'Masalar'}
         </Link>
         <h1 className="mt-2 text-2xl font-semibold">{masa.ad}</h1>
-        <p className="text-sm text-muted-foreground">İlk sipariş alınıyor</p>
+        <p className="text-sm text-muted-foreground">
+          {ekleModu ? 'Mevcut adisyona ürün ekleniyor' : 'İlk sipariş alınıyor'}
+        </p>
       </div>
 
-      <GarsonMenu masaId={masaId} masaAd={masa.ad} />
+      <GarsonMenu
+        masaId={masaId}
+        masaAd={masa.ad}
+        donusModu={ekleModu ? 'adisyon' : 'masalar'}
+      />
     </div>
   );
 }

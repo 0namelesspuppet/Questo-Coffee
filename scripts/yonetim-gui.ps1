@@ -12,6 +12,21 @@ function BatBul($d) {
 $baslatBat = BatBul '*Ba?lat.bat'
 $durdurBat = BatBul '*Durdur.bat'
 
+# Bir .bat dosyasini KONSOL PENCERESI GORUNMEDEN calistirir (WScript.Shell.Run
+# windowStyle=0). Boylece Baslat/Durdur sirasinda ham terminal penceresi
+# acilmaz; durum yalniz asagidaki durum cubugundan ($genel) okunur.
+#   $arg   : .bat'e gecirilecek arguman ('gizli' -> baslat.bat hata olsa bile
+#            pause yapmaz, gizli pencerede kilitlenmez)
+#   $bekle : $true ise bat bitene kadar bloklar (Yeniden baslat icin gerekli)
+function GizliCalistir($bat, $arg, $bekle) {
+  if (-not $bat) { return }
+  $komut = '"' + $bat + '"'
+  if ($arg) { $komut = $komut + ' ' + $arg }
+  $sh = New-Object -ComObject WScript.Shell
+  $sh.CurrentDirectory = $kok
+  [void]$sh.Run($komut, 0, [bool]$bekle)
+}
+
 $script:yerelIpCache      = $null
 $script:ipGuncellemeSayac = 0
 
@@ -242,20 +257,20 @@ function Tazele {
 # Buton click'leri
 $btnBaslat.Add_Click({
   if (-not $baslatBat) { [System.Windows.Forms.MessageBox]::Show("Baslatma .bat bulunamadi.", "Questo") | Out-Null; return }
-  Start-Process -FilePath $baslatBat -WorkingDirectory $kok
+  GizliCalistir $baslatBat 'gizli' $false
   $genel.Text = "BASLATILIYOR..."; $genel.BackColor = $cTuruncu; $btnBaslat.Enabled = $false
 })
 $btnDurdur.Add_Click({
   if (-not $durdurBat) { [System.Windows.Forms.MessageBox]::Show("Durdurma .bat bulunamadi.", "Questo") | Out-Null; return }
-  Start-Process -FilePath $durdurBat -WorkingDirectory $kok
+  GizliCalistir $durdurBat $null $false
   $genel.Text = "DURDURULUYOR..."; $genel.BackColor = $cTuruncu; $btnDurdur.Enabled = $false
 })
 $btnYenile.Add_Click({ Tazele; AdresGuncelle; $btnKopya.Text = "IP'yi kopyala" })
 $btnYeniden.Add_Click({
   if (-not $durdurBat -or -not $baslatBat) { [System.Windows.Forms.MessageBox]::Show("Bat bulunamadi.", "Questo") | Out-Null; return }
   $genel.Text = "YENIDEN BASLATILIYOR..."; $genel.BackColor = $cTuruncu
-  Start-Process -FilePath $durdurBat -WorkingDirectory $kok -Wait
-  Start-Process -FilePath $baslatBat -WorkingDirectory $kok
+  GizliCalistir $durdurBat $null $true
+  GizliCalistir $baslatBat 'gizli' $false
 })
 
 # ---------------------------------------------------------------------------

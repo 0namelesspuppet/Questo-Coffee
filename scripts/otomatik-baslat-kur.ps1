@@ -60,7 +60,16 @@ if (-not $bat -or -not (Test-Path $bat)) {
     exit 1
 }
 
-$action = New-ScheduledTaskAction -Execute $env:ComSpec -Argument "/c `"$bat`"" -WorkingDirectory $kok
+# Acilista KONSOL PENCERESI GORUNMESIN: gizli VBS launcher uzerinden baslat
+# (iceride "gizli" arg ile -> pause'da kilitlenmez). VBS yoksa eski yonteme
+# dus (geriye uyumluluk): cmd ile dogrudan .bat.
+$gizliVbs = Join-Path $kok 'scripts\baslat-gizli.vbs'
+if (Test-Path $gizliVbs) {
+    $wscript = Join-Path $env:SystemRoot 'System32\wscript.exe'
+    $action = New-ScheduledTaskAction -Execute $wscript -Argument "`"$gizliVbs`"" -WorkingDirectory $kok
+} else {
+    $action = New-ScheduledTaskAction -Execute $env:ComSpec -Argument "/c `"$bat`"" -WorkingDirectory $kok
+}
 $trigger = New-ScheduledTaskTrigger -AtLogOn -User "$env:USERDOMAIN\$env:USERNAME"
 $principal = New-ScheduledTaskPrincipal -UserId "$env:USERDOMAIN\$env:USERNAME" -LogonType Interactive -RunLevel Highest
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -ExecutionTimeLimit ([TimeSpan]::Zero)

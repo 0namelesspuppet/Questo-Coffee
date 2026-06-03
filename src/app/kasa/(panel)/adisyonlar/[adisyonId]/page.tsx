@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Plus } from 'lucide-react';
 import { getAdminDb } from '@/lib/firebase/admin';
 import { formatTL } from '@/lib/utils/para';
 import type {
@@ -159,6 +159,16 @@ export default async function AdisyonDetay({
         </div>
       </div>
 
+      {acik && (
+        <Link
+          href={`/kasa/masa/${adisyon.masaId}?ekle=1`}
+          className="flex min-h-[56px] w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-lg font-bold text-primary-foreground shadow-soft transition active:scale-[0.98]"
+        >
+          <Plus className="size-5" strokeWidth={2.75} />
+          Ürün Ekle
+        </Link>
+      )}
+
       <ul className="space-y-3">
         {siparisler.map((s) => {
           const kdl = siparisKalemDurum.get(s.id) ?? [];
@@ -169,7 +179,7 @@ export default async function AdisyonDetay({
           const kalanAlt = (s.toplamKurus as number) - odenmisAlt;
           return (
             <li key={s.id} className="rounded-lg border bg-card p-3">
-              <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center justify-between text-base">
                 <div className="flex items-center gap-2">
                   <span className="font-medium">#{s.gunlukNo}</span>
                   {s.musteriAd && (
@@ -180,7 +190,7 @@ export default async function AdisyonDetay({
                   {DURUM_ETIKET[s.durum]}
                 </span>
               </div>
-              <ul className="mt-2 space-y-1 text-sm">
+              <ul className="mt-2 space-y-1.5 text-base">
                 {(s.kalemler as SiparisKalemi[]).map((k, i) => (
                   <li
                     key={`${k.urunId}-${i}`}
@@ -192,7 +202,7 @@ export default async function AdisyonDetay({
                       </span>{' '}
                       {k.ad}
                       {k.secimler && k.secimler.length > 0 && (
-                        <span className="block text-xs text-foreground/80">
+                        <span className="block text-sm text-foreground/80">
                           {k.secimler
                             .map(
                               (sec) =>
@@ -204,13 +214,13 @@ export default async function AdisyonDetay({
                         </span>
                       )}
                       {k.notlar && (
-                        <span className="block text-xs text-muted-foreground">
+                        <span className="block text-sm text-muted-foreground">
                           Not: {k.notlar}
                         </span>
                       )}
                     </span>
                     <span
-                      className={`shrink-0 tabular-nums text-xs ${kdl[i] ? 'line-through text-muted-foreground' : ''}`}
+                      className={`shrink-0 tabular-nums text-sm ${kdl[i] ? 'line-through text-muted-foreground' : ''}`}
                     >
                       {formatTL(k.araToplamKurus)}
                     </span>

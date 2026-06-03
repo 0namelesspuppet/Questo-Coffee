@@ -43,7 +43,7 @@ if defined KALAN (
         REM ONEMLI: %%~s0 = KISA (8.3) yol. Tam yol "Questo'yu Durdur.bat"
         REM icindeki APOSTROF, PowerShell tek-tirnakli metnini bozup yukseltmeyi
         REM basarisiz birakiyordu (sistem durmuyordu). Kisa yol ASCII'dir, guvenli.
-        powershell -NoProfile -Command "Start-Process -FilePath 'cmd.exe' -ArgumentList '/c','\"%~s0\"' -Verb RunAs"
+        powershell -NoProfile -Command "Start-Process -FilePath 'cmd.exe' -ArgumentList '/c','\"%~s0\"' -Verb RunAs -WindowStyle Hidden"
         endlocal
         exit /b 0
     ) else (

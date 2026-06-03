@@ -4,7 +4,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { Menu, X } from 'lucide-react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { getClientAuth } from '@/lib/firebase/client';
 import { otoGirisYap } from '@/lib/auth/oto-giris-client';
@@ -44,7 +43,6 @@ const aktifMi = (mevcut: string, n: NavItem) =>
 export function KasaShell({ kullanici, children }: Props) {
   const yol = usePathname();
   const [authHazir, setAuthHazir] = useState(false);
-  const [menuAcik, setMenuAcik] = useState(false);
   const otoGirisCalisti = useRef(false);
 
   useEffect(() => {
@@ -69,59 +67,53 @@ export function KasaShell({ kullanici, children }: Props) {
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-3 py-1.5 sm:px-4 sm:py-2">
-          <div className="flex items-center gap-4">
-            <Link href="/" className="flex items-center gap-2 font-semibold">
-              <span className="relative size-7 overflow-hidden rounded-full">
-                <Image
-                  src="/logo.jpg"
-                  alt="Questo"
-                  fill
-                  sizes="28px"
-                  className="object-cover"
-                />
-              </span>
-              <span className="font-serif">Questo · Kasa</span>
-            </Link>
-            <nav className="hidden items-center gap-1 text-sm sm:flex">
-              {NAV.filter((n) => !n.sahipGerek || kullanici.sahip).map((n) => (
-                <Link
-                  key={n.yol}
-                  href={n.yol}
-                  className={cn(
-                    'rounded-md px-2.5 py-1',
-                    aktifMi(yol, n)
-                      ? 'bg-secondary text-secondary-foreground'
-                      : 'text-muted-foreground hover:text-foreground',
-                  )}
-                >
-                  {n.etiket}
-                </Link>
-              ))}
-            </nav>
-          </div>
-          <div className="flex items-center gap-3">
-            <BaglantiRozeti />
-            <button
-              type="button"
-              className="rounded-md p-1 text-muted-foreground sm:hidden"
-              onClick={() => setMenuAcik((v) => !v)}
-              aria-label="Menüyü aç/kapat"
-            >
-              {menuAcik ? <X className="size-5" /> : <Menu className="size-5" />}
-            </button>
-          </div>
-        </div>
+        <div className="mx-auto flex max-w-6xl items-center gap-2 px-3 py-1.5 sm:gap-4 sm:px-4 sm:py-2">
+          <Link
+            href="/"
+            className="flex shrink-0 items-center gap-2 font-semibold"
+          >
+            <span className="relative size-7 overflow-hidden rounded-full">
+              <Image
+                src="/logo.jpg"
+                alt="Questo"
+                fill
+                sizes="28px"
+                className="object-cover"
+              />
+            </span>
+            <span className="hidden font-serif sm:inline">Questo · Kasa</span>
+          </Link>
 
-        {menuAcik && (
-          <nav className="flex flex-col gap-1 border-t bg-background px-4 py-2 text-sm sm:hidden">
+          {/* Mobil: üst barı tam kaplayan sekme çubuğu — hamburger yok, hepsi
+              tek dokunuşla görünür ve erişilebilir. */}
+          <nav
+            className="flex flex-1 items-center gap-1 overflow-x-auto text-sm [scrollbar-width:none] sm:hidden [&::-webkit-scrollbar]:hidden"
+            aria-label="Bölümler"
+          >
             {NAV.filter((n) => !n.sahipGerek || kullanici.sahip).map((n) => (
               <Link
                 key={n.yol}
                 href={n.yol}
-                onClick={() => setMenuAcik(false)}
                 className={cn(
-                  'rounded-md px-3 py-2',
+                  'flex-1 whitespace-nowrap rounded-md px-2 py-1.5 text-center font-medium',
+                  aktifMi(yol, n)
+                    ? 'bg-secondary text-secondary-foreground'
+                    : 'text-muted-foreground',
+                )}
+              >
+                {n.etiket}
+              </Link>
+            ))}
+          </nav>
+
+          {/* Masaüstü: yatay nav */}
+          <nav className="hidden flex-1 items-center gap-1 text-sm sm:flex">
+            {NAV.filter((n) => !n.sahipGerek || kullanici.sahip).map((n) => (
+              <Link
+                key={n.yol}
+                href={n.yol}
+                className={cn(
+                  'rounded-md px-2.5 py-1',
                   aktifMi(yol, n)
                     ? 'bg-secondary text-secondary-foreground'
                     : 'text-muted-foreground hover:text-foreground',
@@ -131,7 +123,11 @@ export function KasaShell({ kullanici, children }: Props) {
               </Link>
             ))}
           </nav>
-        )}
+
+          <div className="flex shrink-0 items-center">
+            <BaglantiRozeti />
+          </div>
+        </div>
       </header>
 
       {!authHazir && (
