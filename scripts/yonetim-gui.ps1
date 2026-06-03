@@ -288,8 +288,28 @@ $btnDurdur.Add_Click({
   $genel.Text = "DURDURULUYOR..."; $genel.BackColor = $cTuruncu
   $btnBaslat.Enabled = $false; $btnDurdur.Enabled = $false
 })
-# Durumu yenile: bekleme durumunu da temizle ki gercek port durumu hemen okunsun.
-$btnYenile.Add_Click({ $script:beklenen = $null; $script:bekleyenTik = 0; Tazele; AdresGuncelle; $btnKopya.Text = "IP'yi kopyala" })
+# "Durumu yenile" sonrasi butonu kisa sure "Yenilendi" yapip eski haline dondur
+# (gorsel geri bildirim). Tek atislik timer.
+$yenileTimer = New-Object System.Windows.Forms.Timer
+$yenileTimer.Interval = 1300
+$yenileTimer.Add_Tick({
+  $yenileTimer.Stop()
+  $btnYenile.Text      = "Durumu yenile"
+  $btnYenile.BackColor = $cKart
+})
+
+# Durumu yenile: bekleme durumunu temizle (gercek port durumu hemen okunsun),
+# IP + QR'yi tazele ve butonda "Yeniliyor..." -> "Yenilendi" geri bildirimi goster.
+$btnYenile.Add_Click({
+  $script:beklenen = $null; $script:bekleyenTik = 0
+  $btnYenile.Text = "Yeniliyor..."; $btnYenile.Enabled = $false; $btnYenile.Refresh()
+  Tazele
+  AdresGuncelle
+  $btnKopya.Text = "IP'yi kopyala"
+  $btnYenile.Enabled = $true
+  $btnYenile.Text = "Yenilendi"; $btnYenile.BackColor = $cYesil
+  $yenileTimer.Stop(); $yenileTimer.Start()
+})
 $btnYeniden.Add_Click({
   if (-not $durdurBat -or -not $baslatBat) { [System.Windows.Forms.MessageBox]::Show("Bat bulunamadi.", "Questo") | Out-Null; return }
   $script:beklenen = 'baslat'; $script:bekleyenTik = 0
