@@ -13,10 +13,6 @@ const config: NextConfig = {
   images: {
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 86_400, // 1 gün — logo gibi nadir değişen görsellere
-    remotePatterns: [
-      { protocol: 'https', hostname: 'firebasestorage.googleapis.com' },
-      { protocol: 'https', hostname: '*.firebasestorage.app' },
-    ],
   },
 
   experimental: {

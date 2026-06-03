@@ -20,11 +20,6 @@ import {
   type Firestore,
 } from 'firebase/firestore';
 import {
-  connectStorageEmulator,
-  getStorage,
-  type FirebaseStorage,
-} from 'firebase/storage';
-import {
   initializeAppCheck,
   ReCaptchaV3Provider,
   type AppCheck,
@@ -34,7 +29,6 @@ const yapilandirma = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
@@ -44,7 +38,6 @@ const emulatorAcik = process.env.NEXT_PUBLIC_USE_EMULATOR === '1';
 let _app: FirebaseApp | null = null;
 let _auth: Auth | null = null;
 let _db: Firestore | null = null;
-let _storage: FirebaseStorage | null = null;
 let _appCheck: AppCheck | null = null;
 let _emulatorBaglandi = false;
 
@@ -68,11 +61,7 @@ const baslat = (): FirebaseApp => {
   return _app;
 };
 
-const emulatoraBagla = (
-  auth: Auth,
-  db: Firestore,
-  storage: FirebaseStorage,
-) => {
+const emulatoraBagla = (auth: Auth, db: Firestore) => {
   if (_emulatorBaglandi || !emulatorAcik) return;
   if (typeof window === 'undefined') return;
   // Sayfayı serve eden host'a göre emulator host'unu seç:
@@ -84,7 +73,6 @@ const emulatoraBagla = (
       disableWarnings: true,
     });
     connectFirestoreEmulator(db, host, 8080);
-    connectStorageEmulator(storage, host, 9199);
     _emulatorBaglandi = true;
     console.log(`[questo] Emulator bağlantısı kuruldu → ${host}`);
   } catch (e) {
@@ -113,9 +101,8 @@ const firestoreOlustur = (app: FirebaseApp): Firestore => {
 const tumServisleriHazirla = () => {
   if (!_auth) _auth = getAuth(baslat());
   if (!_db) _db = firestoreOlustur(baslat());
-  if (!_storage) _storage = getStorage(baslat());
   if (emulatorAcik && !_emulatorBaglandi) {
-    emulatoraBagla(_auth, _db, _storage);
+    emulatoraBagla(_auth, _db);
   }
 };
 
@@ -127,9 +114,4 @@ export const getClientAuth = (): Auth => {
 export const getClientDb = (): Firestore => {
   tumServisleriHazirla();
   return _db!;
-};
-
-export const getClientStorage = (): FirebaseStorage => {
-  tumServisleriHazirla();
-  return _storage!;
 };

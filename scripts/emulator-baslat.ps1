@@ -19,7 +19,7 @@ $gecerliExport = (Test-Path $meta) -and ((Get-Item $meta).Length -gt 0)
 
 $env:JAVA_TOOL_OPTIONS = '-Xmx256m'
 
-$ortak = @('emulators:start', '--only', 'auth,firestore,storage')
+$ortak = @('emulators:start', '--only', 'auth,firestore')
 
 if ($gecerliExport) {
     Write-Host "[emulator] Mevcut emulator-veri yukleniyor..."
