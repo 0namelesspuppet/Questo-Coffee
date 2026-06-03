@@ -53,7 +53,7 @@ $cYazi   = [System.Drawing.Color]::FromArgb(244, 244, 245)
 # --- Form ---
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "Questo Yonetim"
-$form.Size = New-Object System.Drawing.Size(400, 460)
+$form.Size = New-Object System.Drawing.Size(400, 500)
 $form.StartPosition = 'CenterScreen'
 $form.FormBorderStyle = 'FixedDialog'
 $form.MaximizeBox = $false
@@ -230,10 +230,10 @@ $form.Controls.Add($btnYeniden)
 
 # --- Telefon erisim adresi paneli ---
 $lblAdresBaslik = New-Object System.Windows.Forms.Label
-$lblAdresBaslik.Text = "Telefondan baglan (ayni Wi-Fi) - IP onerilen:"
+$lblAdresBaslik.Text = "Telefondan baglan (ayni Wi-Fi):"
 $lblAdresBaslik.ForeColor = $cYazi
 $lblAdresBaslik.Location = New-Object System.Drawing.Point(20, 230)
-$lblAdresBaslik.Size = New-Object System.Drawing.Size(360, 20)
+$lblAdresBaslik.Size = New-Object System.Drawing.Size(190, 20)
 $form.Controls.Add($lblAdresBaslik)
 
 # IP adresi - BIRINCIL (buyuk, yesil) — bilgisayar adi degisse de calisir
@@ -241,8 +241,8 @@ $lblAdresSabit = New-Object System.Windows.Forms.Label
 $lblAdresSabit.Text = "Yukleniyor..."
 $lblAdresSabit.ForeColor = $cYesil
 $lblAdresSabit.Font = New-Object System.Drawing.Font("Consolas", 12, [System.Drawing.FontStyle]::Bold)
-$lblAdresSabit.Location = New-Object System.Drawing.Point(20, 250)
-$lblAdresSabit.Size = New-Object System.Drawing.Size(360, 24)
+$lblAdresSabit.Location = New-Object System.Drawing.Point(20, 253)
+$lblAdresSabit.Size = New-Object System.Drawing.Size(190, 24)
 $form.Controls.Add($lblAdresSabit)
 
 # Bilgisayar adi - yedek (kucuk, gri) — her tikde guncellenir
@@ -250,14 +250,14 @@ $lblAdresPcAd = New-Object System.Windows.Forms.Label
 $lblAdresPcAd.Text = "Bilgisayar adi: $(AdresSabit)"
 $lblAdresPcAd.ForeColor = [System.Drawing.Color]::FromArgb(161, 161, 170)
 $lblAdresPcAd.Font = New-Object System.Drawing.Font("Consolas", 9)
-$lblAdresPcAd.Location = New-Object System.Drawing.Point(20, 277)
-$lblAdresPcAd.Size = New-Object System.Drawing.Size(360, 18)
+$lblAdresPcAd.Location = New-Object System.Drawing.Point(20, 281)
+$lblAdresPcAd.Size = New-Object System.Drawing.Size(190, 18)
 $form.Controls.Add($lblAdresPcAd)
 
 $btnKopya = New-Object System.Windows.Forms.Button
 $btnKopya.Text = "IP'yi kopyala"
-$btnKopya.Location = New-Object System.Drawing.Point(20, 300)
-$btnKopya.Size = New-Object System.Drawing.Size(172, 36)
+$btnKopya.Location = New-Object System.Drawing.Point(20, 304)
+$btnKopya.Size = New-Object System.Drawing.Size(190, 36)
 $btnKopya.FlatStyle = 'Flat'
 $btnKopya.FlatAppearance.BorderSize = 1
 $btnKopya.ForeColor = $cYazi
@@ -273,12 +273,28 @@ $btnKopya.Add_Click({
 $form.Controls.Add($btnKopya)
 
 $lblIpucu = New-Object System.Windows.Forms.Label
-$lblIpucu.Text = "Telefonda tarayicida ac, 'Ana ekrana ekle'. IP degisirse bu panelden tekrar kopyala."
+$lblIpucu.Text = "IP degisirse 'Durumu yenile' ile guncelle."
 $lblIpucu.ForeColor = [System.Drawing.Color]::FromArgb(161, 161, 170)
 $lblIpucu.Font = New-Object System.Drawing.Font("Segoe UI", 8)
-$lblIpucu.Location = New-Object System.Drawing.Point(200, 300)
-$lblIpucu.Size = New-Object System.Drawing.Size(180, 42)
+$lblIpucu.Location = New-Object System.Drawing.Point(20, 346)
+$lblIpucu.Size = New-Object System.Drawing.Size(190, 32)
 $form.Controls.Add($lblIpucu)
+
+# QR kod (sag taraf) — telefonda tarayiciya girmeden tara
+$lblQrBaslik = New-Object System.Windows.Forms.Label
+$lblQrBaslik.Text = "QR kodu tara:"
+$lblQrBaslik.ForeColor = [System.Drawing.Color]::FromArgb(161, 161, 170)
+$lblQrBaslik.Font = New-Object System.Drawing.Font("Segoe UI", 8)
+$lblQrBaslik.Location = New-Object System.Drawing.Point(220, 230)
+$lblQrBaslik.Size = New-Object System.Drawing.Size(160, 18)
+$form.Controls.Add($lblQrBaslik)
+
+$picQR = New-Object System.Windows.Forms.PictureBox
+$picQR.Location = New-Object System.Drawing.Point(220, 250)
+$picQR.Size = New-Object System.Drawing.Size(160, 160)
+$picQR.SizeMode = [System.Windows.Forms.PictureBoxSizeMode]::Zoom
+$picQR.BackColor = [System.Drawing.Color]::White
+$form.Controls.Add($picQR)
 
 # IP ve bilgisayar adini guncelle — acilista ve her ~30 sn'de bir cagrilir.
 function AdresGuncelle {
@@ -287,6 +303,22 @@ function AdresGuncelle {
   if ($ip) { $lblAdresSabit.Text = "http://$($ip):3000" }
   else { $lblAdresSabit.Text = "(IP bulunamadi - Wi-Fi bagli mi?)" }
   $lblAdresPcAd.Text = "Bilgisayar adi: $(AdresSabit)"
+  # QR kod olustur
+  if ($ip) {
+    try {
+      $qrScript = Join-Path $PSScriptRoot 'qr-uret.mjs'
+      $qrPng    = Join-Path $env:TEMP 'questo-qr.png'
+      $p = Start-Process 'node' -ArgumentList "`"$qrScript`" `"http://$($ip):3000`" `"$qrPng`"" `
+                         -WorkingDirectory $kok -Wait -PassThru -WindowStyle Hidden
+      if ($p.ExitCode -eq 0 -and (Test-Path $qrPng)) {
+        $bytes = [System.IO.File]::ReadAllBytes($qrPng)
+        $ms    = New-Object System.IO.MemoryStream($bytes, 0, $bytes.Length)
+        $old   = $picQR.Image
+        $picQR.Image = [System.Drawing.Bitmap]::FromStream($ms)
+        if ($old) { $old.Dispose() }
+      }
+    } catch {}
+  }
 }
 
 # Otomatik yenileme (canli durum)
