@@ -17,6 +17,8 @@ $veriDir = 'emulator-veri'
 $meta = Join-Path $veriDir 'firebase-export-metadata.json'
 $gecerliExport = (Test-Path $meta) -and ((Get-Item $meta).Length -gt 0)
 
+$env:JAVA_TOOL_OPTIONS = '-Xmx256m'
+
 $ortak = @('emulators:start', '--only', 'auth,firestore,storage')
 
 if ($gecerliExport) {
