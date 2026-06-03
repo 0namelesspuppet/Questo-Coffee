@@ -97,26 +97,31 @@ export default async function AdisyonDetay({
     .reduce((acc, t) => acc + t.toplamKurus, 0);
   const kalanToplam = Math.max(0, (adisyon.toplamKurus as number) - odenmisToplam);
 
-  // Ürün bazlı ödeme: hangi kalemler ödendi?
-  const odenmisKalemMap = new Map<string, number>();
+  // Ürün bazlı ödeme: her kalem türünden kaç BİRİM ödendi?
+  // Anahtar birim fiyat bazlı; "5× Çay"ın yalnız 2'si ödenebilsin diye birim sayar.
+  // (Eski tam-satır talepleri de uyumlu: birim = araToplam/adet ile aynı anahtara düşer.)
+  const odenenBirimMap = new Map<string, number>();
   for (const t of talepler) {
     if (t.durum !== 'odendi' || t.yontem !== 'urun' || !t.secilenKalemler) continue;
     for (const k of t.secilenKalemler) {
-      const kk = `${k.siparisId}||${k.ad}||${k.araToplamKurus}`;
-      odenmisKalemMap.set(kk, (odenmisKalemMap.get(kk) ?? 0) + 1);
+      const birim =
+        k.adet > 0 ? Math.round(k.araToplamKurus / k.adet) : k.araToplamKurus;
+      const kk = `${k.siparisId}||${k.ad}||${birim}`;
+      odenenBirimMap.set(kk, (odenenBirimMap.get(kk) ?? 0) + k.adet);
     }
   }
-  // Her siparişteki kalemlerin ödendi mi boolean dizisi
-  const konsumMap = new Map(odenmisKalemMap);
-  const siparisKalemDurum = new Map<string, boolean[]>();
+  // Her siparişteki kalemlerin ödenmiş birim adedi
+  const konsumMap = new Map(odenenBirimMap);
+  const siparisKalemOdenen = new Map<string, number[]>();
   for (const s of siparisler) {
-    const durumlar = (s.kalemler as SiparisKalemi[]).map((k) => {
-      const kk = `${s.id}||${k.ad}||${k.araToplamKurus}`;
+    const odenenler = (s.kalemler as SiparisKalemi[]).map((k) => {
+      const kk = `${s.id}||${k.ad}||${k.birimFiyatKurus}`;
       const kalan = konsumMap.get(kk) ?? 0;
-      if (kalan > 0) { konsumMap.set(kk, kalan - 1); return true; }
-      return false;
+      const odenen = Math.min(k.adet, kalan);
+      if (odenen > 0) konsumMap.set(kk, kalan - odenen);
+      return odenen;
     });
-    siparisKalemDurum.set(s.id, durumlar);
+    siparisKalemOdenen.set(s.id, odenenler);
   }
 
   return (
@@ -178,9 +183,9 @@ export default async function AdisyonDetay({
 
       <ul className="space-y-3">
         {siparisler.map((s) => {
-          const kdl = siparisKalemDurum.get(s.id) ?? [];
+          const odl = siparisKalemOdenen.get(s.id) ?? [];
           const odenmisAlt = (s.kalemler as SiparisKalemi[]).reduce(
-            (acc, k, i) => acc + (kdl[i] ? (k.araToplamKurus as number) : 0),
+            (acc, k, i) => acc + (odl[i] ?? 0) * (k.birimFiyatKurus as number),
             0,
           );
           const kalanAlt = (s.toplamKurus as number) - odenmisAlt;
@@ -198,16 +203,24 @@ export default async function AdisyonDetay({
                 </span>
               </div>
               <ul className="mt-2 space-y-1.5 text-base">
-                {(s.kalemler as SiparisKalemi[]).map((k, i) => (
+                {(s.kalemler as SiparisKalemi[]).map((k, i) => {
+                  const odenen = odl[i] ?? 0;
+                  const tamOdendi = odenen >= k.adet;
+                  return (
                   <li
                     key={`${k.urunId}-${i}`}
-                    className={`flex items-start justify-between gap-2 ${kdl[i] ? 'opacity-40' : ''}`}
+                    className={`flex items-start justify-between gap-2 ${tamOdendi ? 'opacity-40' : ''}`}
                   >
-                    <span className={`min-w-0 ${kdl[i] ? 'line-through' : ''}`}>
+                    <span className={`min-w-0 ${tamOdendi ? 'line-through' : ''}`}>
                       <span className="tabular-nums text-muted-foreground">
                         {k.adet}×
                       </span>{' '}
                       {k.ad}
+                      {odenen > 0 && !tamOdendi && (
+                        <span className="ml-1 text-xs text-emerald-700 dark:text-emerald-400">
+                          ({odenen} ödendi)
+                        </span>
+                      )}
                       {k.secimler && k.secimler.length > 0 && (
                         <span className="block text-sm text-foreground/80">
                           {k.secimler
@@ -227,12 +240,13 @@ export default async function AdisyonDetay({
                       )}
                     </span>
                     <span
-                      className={`shrink-0 tabular-nums text-sm ${kdl[i] ? 'line-through text-muted-foreground' : ''}`}
+                      className={`shrink-0 tabular-nums text-sm ${tamOdendi ? 'line-through text-muted-foreground' : ''}`}
                     >
                       {formatTL(k.araToplamKurus)}
                     </span>
                   </li>
-                ))}
+                  );
+                })}
               </ul>
               <div className="mt-2 border-t pt-2 space-y-0.5">
                 {odenmisAlt > 0 && (
@@ -262,9 +276,9 @@ export default async function AdisyonDetay({
           genelToplamKurus={adisyon.toplamKurus as number}
           siparisler={siparisler
             .map((s) => {
-              const kdl = siparisKalemDurum.get(s.id) ?? [];
+              const odl = siparisKalemOdenen.get(s.id) ?? [];
               const odenmisAlt = (s.kalemler as SiparisKalemi[]).reduce(
-                (acc, k, i) => acc + (kdl[i] ? (k.araToplamKurus as number) : 0),
+                (acc, k, i) => acc + (odl[i] ?? 0) * (k.birimFiyatKurus as number),
                 0,
               );
               return {
@@ -274,12 +288,17 @@ export default async function AdisyonDetay({
                 musteriAd: s.musteriAd,
                 toplamKurus: (s.toplamKurus as number) - odenmisAlt,
                 kalemler: (s.kalemler as SiparisKalemi[])
-                  .filter((_, i) => !kdl[i])
-                  .map((k) => ({
-                    ad: k.ad,
-                    adet: k.adet,
-                    araToplamKurus: k.araToplamKurus as number,
-                  })),
+                  .map((k, i) => {
+                    const kalanAdet = k.adet - (odl[i] ?? 0);
+                    const birim = k.birimFiyatKurus as number;
+                    return {
+                      ad: k.ad,
+                      adet: kalanAdet,
+                      birimKurus: birim,
+                      araToplamKurus: kalanAdet * birim,
+                    };
+                  })
+                  .filter((k) => k.adet > 0),
               };
             })
             .filter((s) => s.kalemler.length > 0)}

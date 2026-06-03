@@ -8,7 +8,10 @@ import type { SiparisDurumu } from '@/types/model';
 
 interface KalemOzet {
   ad: string;
+  /** Henüz ödenmemiş (kalan) birim adedi. */
   adet: number;
+  /** Tek birim fiyatı — birim birim ödeme için. */
+  birimKurus: number;
   araToplamKurus: number;
 }
 
@@ -41,7 +44,8 @@ export function KasiyerBolme({
   const router = useRouter();
   const [aktifSekme, setAktifSekme] = useState<Sekme>('tam');
   const [kisiSayisi, setKisiSayisi] = useState(2);
-  const [secili, setSecili] = useState<Set<string>>(new Set());
+  // Ürün seçerek ödeme: kalem anahtarı → seçilen birim adedi.
+  const [seciliAdet, setSeciliAdet] = useState<Map<string, number>>(new Map());
   const [odenenSayisi, setOdenenSayisi] = useState(0);
   const [yukleniyor, setYukleniyor] = useState<string | null>(null);
   const [hata, setHata] = useState<string | null>(null);
@@ -61,24 +65,32 @@ export function KasiyerBolme({
       musteriAd: s.musteriAd,
       ad: k.ad,
       adet: k.adet,
+      birimKurus: k.birimKurus,
       araToplamKurus: k.araToplamKurus,
     })),
   );
 
-  const seciliToplam = Array.from(secili).reduce((acc, key) => {
-    const item = tumKalemler.find((k) => k.key === key);
-    return acc + (item?.araToplamKurus ?? 0);
-  }, 0);
+  const seciliAdetToplam = Array.from(seciliAdet.values()).reduce(
+    (acc, n) => acc + n,
+    0,
+  );
+  const seciliToplam = Array.from(seciliAdet.entries()).reduce(
+    (acc, [key, qty]) => {
+      const item = tumKalemler.find((k) => k.key === key);
+      return acc + (item ? item.birimKurus * qty : 0);
+    },
+    0,
+  );
 
   // Kişi başı, KALAN değil değişmeyen GENEL toplam üzerinden sabit hesaplanır;
   // bir kişi ödeyince bekleyenlerin tutarı düşmüş gibi görünmez.
   const kisiPayi = Math.ceil(genelToplamKurus / kisiSayisi);
 
-  const toggleSecili = (key: string) => {
-    setSecili((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
+  const setKalemAdet = (key: string, adet: number) => {
+    setSeciliAdet((prev) => {
+      const next = new Map(prev);
+      if (adet <= 0) next.delete(key);
+      else next.set(key, adet);
       return next;
     });
   };
@@ -124,15 +136,15 @@ export function KasiyerBolme({
 
   const urunOde = () => {
     if (tamamenOdendi) return; // 0 tutarlı talep guard'ı
-    const kalemler = Array.from(secili).flatMap((key) => {
+    const kalemler = Array.from(seciliAdet.entries()).flatMap(([key, qty]) => {
       const item = tumKalemler.find((k) => k.key === key);
-      if (!item) return [];
+      if (!item || qty <= 0) return [];
       return [{
         siparisId: item.siparisId,
         siparisNo: item.siparisNo,
         ad: item.ad,
-        adet: item.adet,
-        araToplamKurus: item.araToplamKurus,
+        adet: qty,
+        araToplamKurus: item.birimKurus * qty,
       }];
     });
     if (kalemler.length === 0) return;
@@ -141,7 +153,7 @@ export function KasiyerBolme({
     talep(
       { yontem: 'urun', secilenKalemler: kalemler },
       `urun-${Date.now()}`,
-      () => setSecili(new Set()),
+      () => setSeciliAdet(new Map()),
     );
   };
 
@@ -305,37 +317,74 @@ export function KasiyerBolme({
                     </p>
                     {s.kalemler.map((k, i) => {
                       const key = `${s.id}-${i}`;
+                      const sec = seciliAdet.get(key) ?? 0;
                       return (
-                        <label
+                        <div
                           key={key}
-                          className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-3 transition-colors hover:bg-muted/50 active:bg-muted/60"
+                          className="flex items-center gap-3 rounded-lg px-2 py-2.5"
                         >
-                          <input
-                            type="checkbox"
-                            checked={secili.has(key)}
-                            onChange={() => toggleSecili(key)}
-                            className="size-6 rounded accent-primary"
-                          />
-                          <span className="flex-1 text-base">
-                            <span className="tabular-nums text-muted-foreground">
-                              {k.adet}×
-                            </span>{' '}
-                            {k.ad}
-                          </span>
-                          <span className="text-base tabular-nums">
-                            {formatTL(k.araToplamKurus)}
-                          </span>
-                        </label>
+                          <div className="min-w-0 flex-1">
+                            <span className="text-base">
+                              <span className="tabular-nums text-muted-foreground">
+                                {k.adet}×
+                              </span>{' '}
+                              {k.ad}
+                            </span>
+                            <span className="block text-xs tabular-nums text-muted-foreground">
+                              {formatTL(k.birimKurus)} / adet
+                            </span>
+                          </div>
+                          {k.adet === 1 ? (
+                            <button
+                              type="button"
+                              onClick={() => setKalemAdet(key, sec > 0 ? 0 : 1)}
+                              className={`flex size-11 items-center justify-center rounded-lg border transition active:scale-[0.97] ${
+                                sec > 0
+                                  ? 'border-primary bg-primary text-primary-foreground'
+                                  : 'active:bg-secondary'
+                              }`}
+                              aria-label={sec > 0 ? 'Seçimi kaldır' : 'Seç'}
+                            >
+                              <Check className="size-5" />
+                            </button>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setKalemAdet(key, Math.max(0, sec - 1))}
+                                disabled={sec <= 0}
+                                className="flex size-11 items-center justify-center rounded-full border active:bg-secondary disabled:opacity-40"
+                                aria-label="Azalt"
+                              >
+                                <Minus className="size-5" />
+                              </button>
+                              <span className="w-7 text-center text-lg font-semibold tabular-nums">
+                                {sec}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setKalemAdet(key, Math.min(k.adet, sec + 1))
+                                }
+                                disabled={sec >= k.adet}
+                                className="flex size-11 items-center justify-center rounded-full border active:bg-secondary disabled:opacity-40"
+                                aria-label="Artır"
+                              >
+                                <Plus className="size-5" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       );
                     })}
                   </li>
                 ))}
               </ul>
 
-              {secili.size > 0 && (
+              {seciliAdetToplam > 0 && (
                 <div className="flex items-center justify-between gap-2 rounded-lg bg-muted/50 px-3 py-2.5">
                   <span className="text-lg font-semibold tabular-nums">
-                    {formatTL(seciliToplam)}
+                    {seciliAdetToplam} ürün · {formatTL(seciliToplam)}
                   </span>
                   <button
                     type="button"
