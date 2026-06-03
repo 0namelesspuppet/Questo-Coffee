@@ -460,127 +460,175 @@ export function MenuYonetimi() {
         </div>
 
         {urunForm.acik && (
-          <div className="space-y-2 rounded-md border bg-card p-3">
-            <input
-              type="text"
-              placeholder="Ürün adı"
-              value={urunForm.veri.ad}
-              onChange={(e) =>
-                setUrunForm((f) => ({
-                  ...f,
-                  veri: { ...f.veri, ad: e.target.value },
-                }))
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="fixed inset-0 z-40 flex items-end justify-center sm:items-center"
+          >
+            <button
+              type="button"
+              onClick={() =>
+                setUrunForm({ acik: false, duzenleId: null, veri: bosUrun })
               }
-              className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
+              aria-label="Kapat"
+              className="absolute inset-0 bg-foreground/40 backdrop-blur-sm"
             />
-            <textarea
-              placeholder="Açıklama (opsiyonel)"
-              rows={2}
-              value={urunForm.veri.aciklama}
-              onChange={(e) =>
-                setUrunForm((f) => ({
-                  ...f,
-                  veri: { ...f.veri, aciklama: e.target.value },
-                }))
-              }
-              className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
-            />
-            <div className="grid grid-cols-3 gap-2">
-              <select
-                value={urunForm.veri.kategoriId}
-                onChange={(e) =>
-                  setUrunForm((f) => ({
-                    ...f,
-                    veri: { ...f.veri, kategoriId: e.target.value },
-                  }))
-                }
-                className="rounded-md border bg-background px-2 py-1.5 text-sm"
-              >
-                {kategoriler.map((k) => (
-                  <option key={k.id} value={k.id}>
-                    {k.ad}
-                  </option>
-                ))}
-              </select>
-              <input
-                type="text"
-                inputMode="decimal"
-                placeholder="Fiyat (TL)"
-                value={urunForm.veri.fiyatTL}
-                onChange={(e) =>
-                  setUrunForm((f) => ({
-                    ...f,
-                    veri: { ...f.veri, fiyatTL: e.target.value },
-                  }))
-                }
-                className="rounded-md border bg-background px-2 py-1.5 text-sm"
-              />
-              <input
-                type="number"
-                min={0}
-                placeholder="Sıra"
-                value={urunForm.veri.sira}
-                onChange={(e) =>
-                  setUrunForm((f) => ({
-                    ...f,
-                    veri: { ...f.veri, sira: Number(e.target.value) },
-                  }))
-                }
-                className="rounded-md border bg-background px-2 py-1.5 text-sm"
-              />
-            </div>
-            <div className="flex flex-wrap items-center gap-3 text-sm">
-              <label className="inline-flex items-center gap-1.5">
-                <input
-                  type="checkbox"
-                  checked={urunForm.veri.stoktaMi}
-                  onChange={(e) =>
-                    setUrunForm((f) => ({
-                      ...f,
-                      veri: { ...f.veri, stoktaMi: e.target.checked },
-                    }))
+            <div className="relative w-full max-w-lg max-h-[92dvh] overflow-y-auto rounded-t-3xl bg-card shadow-floating anim-sheet-in sm:rounded-3xl">
+              <header className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b bg-card/95 px-5 py-3 backdrop-blur">
+                <h2 className="font-serif text-xl leading-tight">
+                  {urunForm.duzenleId ? 'Ürünü düzenle' : 'Ürün ekle'}
+                </h2>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setUrunForm({ acik: false, duzenleId: null, veri: bosUrun })
                   }
-                />
-                Stokta
-              </label>
-              <label className="inline-flex items-center gap-1.5">
-                <span className="text-muted-foreground">Stok adet:</span>
-                <input
-                  type="number"
-                  min={0}
-                  placeholder="sınırsız"
-                  value={urunForm.veri.stokMiktar}
-                  onChange={(e) =>
-                    setUrunForm((f) => ({
-                      ...f,
-                      veri: { ...f.veri, stokMiktar: e.target.value },
-                    }))
+                  aria-label="Kapat"
+                  className="inline-flex size-9 items-center justify-center rounded-full bg-background text-foreground shadow-soft active:scale-90"
+                >
+                  <X className="size-4" />
+                </button>
+              </header>
+
+              <div className="space-y-3 p-5">
+                <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+                  Ürün adı
+                  <input
+                    type="text"
+                    placeholder="Ürün adı"
+                    value={urunForm.veri.ad}
+                    onChange={(e) =>
+                      setUrunForm((f) => ({
+                        ...f,
+                        veri: { ...f.veri, ad: e.target.value },
+                      }))
+                    }
+                    className="w-full rounded-md border bg-background px-2 py-2 text-sm text-foreground"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+                  Açıklama (opsiyonel)
+                  <textarea
+                    placeholder="Açıklama"
+                    rows={2}
+                    value={urunForm.veri.aciklama}
+                    onChange={(e) =>
+                      setUrunForm((f) => ({
+                        ...f,
+                        veri: { ...f.veri, aciklama: e.target.value },
+                      }))
+                    }
+                    className="w-full rounded-md border bg-background px-2 py-2 text-sm text-foreground"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+                  Kategori
+                  <select
+                    value={urunForm.veri.kategoriId}
+                    onChange={(e) =>
+                      setUrunForm((f) => ({
+                        ...f,
+                        veri: { ...f.veri, kategoriId: e.target.value },
+                      }))
+                    }
+                    className="w-full rounded-md border bg-background px-2 py-2 text-sm text-foreground"
+                  >
+                    {kategoriler.map((k) => (
+                      <option key={k.id} value={k.id}>
+                        {k.ad}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+                    Fiyat (TL)
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="0,00"
+                      value={urunForm.veri.fiyatTL}
+                      onChange={(e) =>
+                        setUrunForm((f) => ({
+                          ...f,
+                          veri: { ...f.veri, fiyatTL: e.target.value },
+                        }))
+                      }
+                      className="rounded-md border bg-background px-2 py-2 text-sm text-foreground"
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+                    Sıra
+                    <input
+                      type="number"
+                      min={0}
+                      placeholder="0"
+                      value={urunForm.veri.sira}
+                      onChange={(e) =>
+                        setUrunForm((f) => ({
+                          ...f,
+                          veri: { ...f.veri, sira: Number(e.target.value) },
+                        }))
+                      }
+                      className="rounded-md border bg-background px-2 py-2 text-sm text-foreground"
+                    />
+                  </label>
+                </div>
+                <div className="flex flex-wrap items-center gap-3 text-sm">
+                  <label className="inline-flex items-center gap-1.5">
+                    <input
+                      type="checkbox"
+                      checked={urunForm.veri.stoktaMi}
+                      onChange={(e) =>
+                        setUrunForm((f) => ({
+                          ...f,
+                          veri: { ...f.veri, stoktaMi: e.target.checked },
+                        }))
+                      }
+                    />
+                    Stokta
+                  </label>
+                  <label className="inline-flex items-center gap-1.5">
+                    <span className="text-muted-foreground">Stok adet:</span>
+                    <input
+                      type="number"
+                      min={0}
+                      placeholder="sınırsız"
+                      value={urunForm.veri.stokMiktar}
+                      onChange={(e) =>
+                        setUrunForm((f) => ({
+                          ...f,
+                          veri: { ...f.veri, stokMiktar: e.target.value },
+                        }))
+                      }
+                      className="w-20 rounded-md border bg-background px-2 py-1 text-sm tabular-nums"
+                    />
+                    <span className="text-xs text-muted-foreground">
+                      boş = sınırsız
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              <footer className="sticky bottom-0 z-10 flex items-center justify-end gap-2 border-t bg-card/95 px-5 py-3 backdrop-blur">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setUrunForm({ acik: false, duzenleId: null, veri: bosUrun })
                   }
-                  className="w-20 rounded-md border bg-background px-2 py-1 text-sm tabular-nums"
-                />
-                <span className="text-xs text-muted-foreground">
-                  boş = sınırsız
-                </span>
-              </label>
-            </div>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={urunKaydet}
-                disabled={!urunForm.veri.ad.trim() || !urunForm.veri.fiyatTL}
-                className="flex-1 rounded-md bg-primary px-3 py-1.5 text-sm text-primary-foreground disabled:opacity-50"
-              >
-                {urunForm.duzenleId ? 'Güncelle' : 'Ekle'}
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  setUrunForm({ acik: false, duzenleId: null, veri: bosUrun })
-                }
-                className="rounded-md border px-3 py-1.5 text-sm"
-              >
-                İptal
-              </button>
+                  className="rounded-full border bg-background px-4 py-2 text-sm"
+                >
+                  İptal
+                </button>
+                <button
+                  type="button"
+                  onClick={urunKaydet}
+                  disabled={!urunForm.veri.ad.trim() || !urunForm.veri.fiyatTL}
+                  className="rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-soft disabled:opacity-50"
+                >
+                  {urunForm.duzenleId ? 'Güncelle' : 'Ekle'}
+                </button>
+              </footer>
             </div>
           </div>
         )}
@@ -608,7 +656,7 @@ export function MenuYonetimi() {
             goruntulenenUrunler.map((u) => (
               <li
                 key={u.id}
-                className="flex items-start gap-3 rounded-lg border bg-card p-3"
+                className="flex flex-wrap items-start gap-3 rounded-lg border bg-card p-3 sm:flex-nowrap"
               >
                 <div className="relative size-16 shrink-0">
                   <label
@@ -666,8 +714,8 @@ export function MenuYonetimi() {
                     {formatTL(u.fiyatKurus)}
                   </div>
                 </div>
-                <div className="flex shrink-0 items-center gap-1">
-                  <label className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                <div className="flex w-full shrink-0 items-center justify-end gap-1 sm:w-auto">
+                  <label className="mr-1 inline-flex items-center gap-1 text-xs text-muted-foreground">
                     <input
                       type="checkbox"
                       checked={u.stoktaMi}
@@ -681,12 +729,12 @@ export function MenuYonetimi() {
                     title="Opsiyonlar (boy, şeker, ekstra)"
                     onClick={() => setOpsiyonUrun(u)}
                     className={cn(
-                      'inline-flex items-center gap-0.5 rounded-md p-1.5',
+                      'inline-flex h-9 min-w-9 items-center justify-center gap-0.5 rounded-md px-2',
                       (u.opsiyonGruplari?.length ?? 0) > 0 &&
                         'text-primary',
                     )}
                   >
-                    <Sliders className="size-3.5" />
+                    <Sliders className="size-4" />
                     {(u.opsiyonGruplari?.length ?? 0) > 0 && (
                       <span className="text-[10px] tabular-nums">
                         {u.opsiyonGruplari!.length}
@@ -714,17 +762,17 @@ export function MenuYonetimi() {
                         },
                       })
                     }
-                    className="p-1.5"
+                    className="inline-flex size-9 items-center justify-center rounded-md"
                   >
-                    <Pencil className="size-3.5" />
+                    <Pencil className="size-4" />
                   </button>
                   <button
                     type="button"
                     aria-label="Sil"
                     onClick={() => urunSil(u.id)}
-                    className="p-1.5 text-destructive"
+                    className="inline-flex size-9 items-center justify-center rounded-md text-destructive"
                   >
-                    <Trash2 className="size-3.5" />
+                    <Trash2 className="size-4" />
                   </button>
                 </div>
               </li>
