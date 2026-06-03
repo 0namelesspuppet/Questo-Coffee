@@ -18,7 +18,7 @@
 
 $ErrorActionPreference = 'Continue'
 $ProjectId = 'demo-questo'
-$PeriyotSn = 900  # 15 dakika
+$PeriyotSn = 3600 # 60 dakika
 $ZipTutGun = 30   # son 30 günlük zip sakla
 
 # Script kendisi scripts/ içinde — kök iki üst klasör (script -> scripts -> kök)

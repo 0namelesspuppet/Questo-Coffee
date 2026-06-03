@@ -66,7 +66,7 @@ echo   [3/5] Next.js baslatiliyor (production, paralel, log: %LOG%\nextjs.log)..
 echo         (kod degismisse ilk acilista ~30 sn build olabilir - arka planda)
 wscript "%~dp0scripts\gizli-calistir.vbs" "nextjs.log" "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\uygulama-baslat.ps1"
 
-rem Periodic yedek scripti (15 dk'da bir export + gunluk zip) - paralel, kritik degil
+rem Periodic yedek scripti (60 dk'da bir export + gunluk zip) - paralel, kritik degil
 echo   [+]   Periodic yedek scripti baslatiliyor (log: %LOG%\yedek.log)...
 wscript "%~dp0scripts\gizli-calistir.vbs" "yedek.log" "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\yedek-periodic.ps1"
 
