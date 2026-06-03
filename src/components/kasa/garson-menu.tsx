@@ -622,26 +622,26 @@ function UrunListesi({
                   urunEkle(u);
                 }
               }}
-              className="relative flex h-full min-h-[13rem] w-full cursor-pointer flex-col justify-between gap-3 rounded-xl border bg-card p-4 text-left shadow-soft transition active:bg-secondary/40 sm:min-h-[9rem]"
+              className="relative flex h-full min-h-[6.5rem] w-full cursor-pointer flex-col justify-between gap-2 rounded-xl border bg-card p-3 text-left shadow-soft transition active:bg-secondary/40 sm:min-h-[9rem] sm:gap-3 sm:p-4"
               aria-label={`${u.ad} ekle`}
             >
-              <span className="block text-lg font-semibold leading-snug line-clamp-3">
+              <span className="block text-sm font-semibold leading-snug line-clamp-2 sm:text-base sm:line-clamp-3">
                 {u.ad}
               </span>
               <div className="flex items-end justify-between gap-2">
-                <span className="text-lg font-medium tabular-nums text-foreground">
+                <span className="text-sm font-medium tabular-nums text-foreground sm:text-base">
                   {formatTL(u.fiyatKurus)}
                 </span>
                 {adet === 0 ? (
                   <span
                     aria-hidden="true"
-                    className="inline-flex h-16 min-w-12 shrink-0 items-center justify-center rounded-full bg-primary px-3 text-primary-foreground shadow-soft sm:h-11 sm:min-w-11"
+                    className="inline-flex h-10 min-w-10 shrink-0 items-center justify-center rounded-full bg-primary px-2 text-primary-foreground shadow-soft sm:h-11 sm:min-w-11"
                   >
-                    <Plus className="size-7" strokeWidth={3} />
+                    <Plus className="size-5" strokeWidth={3} />
                   </span>
                 ) : (
                   <div
-                    className="inline-flex h-16 shrink-0 items-center rounded-full bg-primary text-primary-foreground shadow-soft sm:h-11"
+                    className="inline-flex h-10 shrink-0 items-center rounded-full bg-primary text-primary-foreground shadow-soft sm:h-11"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <button
@@ -650,12 +650,12 @@ function UrunListesi({
                         e.stopPropagation();
                         urunCikar(u);
                       }}
-                      className="flex h-16 w-12 items-center justify-center rounded-l-full active:bg-primary/80 sm:h-11 sm:w-11"
+                      className="flex h-10 w-10 items-center justify-center rounded-l-full active:bg-primary/80 sm:h-11 sm:w-11"
                       aria-label={`${u.ad} azalt`}
                     >
-                      <Minus className="size-7" strokeWidth={3} />
+                      <Minus className="size-5" strokeWidth={3} />
                     </button>
-                    <span className="min-w-8 text-center text-base font-bold tabular-nums sm:min-w-6 sm:text-sm">
+                    <span className="min-w-6 text-center text-sm font-bold tabular-nums">
                       {adet}
                     </span>
                     <button
@@ -664,10 +664,10 @@ function UrunListesi({
                         e.stopPropagation();
                         urunEkle(u);
                       }}
-                      className="flex h-16 w-12 items-center justify-center rounded-r-full active:bg-primary/80 sm:h-11 sm:w-11"
+                      className="flex h-10 w-10 items-center justify-center rounded-r-full active:bg-primary/80 sm:h-11 sm:w-11"
                       aria-label={`${u.ad} ekle`}
                     >
-                      <Plus className="size-7" strokeWidth={3} />
+                      <Plus className="size-5" strokeWidth={3} />
                     </button>
                   </div>
                 )}
