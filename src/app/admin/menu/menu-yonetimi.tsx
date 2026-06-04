@@ -8,7 +8,8 @@ import {
   orderBy,
   query,
 } from 'firebase/firestore';
-import { getClientDb } from '@/lib/firebase/client';
+import { onAuthStateChanged } from 'firebase/auth';
+import { getClientAuth, getClientDb } from '@/lib/firebase/client';
 import {
   kategoriConverter,
   urunConverter,
@@ -68,38 +69,63 @@ export function MenuYonetimi() {
 
   useEffect(() => {
     const db = getClientDb();
-    const kQ = query(
-      collection(db, `restoranlar/${RESTORAN}/kategoriler`).withConverter(
-        kategoriConverter,
-      ),
-      orderBy('sira', 'asc'),
-    );
-    const uQ = query(
-      collection(db, `restoranlar/${RESTORAN}/urunler`).withConverter(
-        urunConverter,
-      ),
-      orderBy('sira', 'asc'),
-    );
-    // Boş durumu ("Henüz ürün yok.") yalnızca her iki sorgu da ilk kez yüklendikten
-    // sonra göster; aksi halde veri gelmeden yanıltıcı görünür.
+    let u1: (() => void) | undefined;
+    let u2: (() => void) | undefined;
     let katYuklendi = false;
     let urunYuklendi = false;
     const tamamlandiKontrol = () => {
       if (katYuklendi && urunYuklendi) setYukleniyor(false);
     };
-    const u1 = onSnapshot(kQ, (s) => {
-      setKategoriler(s.docs.map((d) => d.data()));
-      katYuklendi = true;
-      tamamlandiKontrol();
+
+    // Auth hazır olmadan onSnapshot kurmak permission hatası verir (kurallar
+    // kasiyer girişi ister). Önce oturumu bekle, sonra dinlemeyi kur.
+    const authUnsub = onAuthStateChanged(getClientAuth(), (user) => {
+      u1?.();
+      u2?.();
+      u1 = undefined;
+      u2 = undefined;
+      katYuklendi = false;
+      urunYuklendi = false;
+      if (!user) return;
+
+      const kQ = query(
+        collection(db, `restoranlar/${RESTORAN}/kategoriler`).withConverter(
+          kategoriConverter,
+        ),
+        orderBy('sira', 'asc'),
+      );
+      const uQ = query(
+        collection(db, `restoranlar/${RESTORAN}/urunler`).withConverter(
+          urunConverter,
+        ),
+        orderBy('sira', 'asc'),
+      );
+      // Boş durumu ("Henüz ürün yok.") yalnızca her iki sorgu da ilk kez
+      // yüklendikten sonra göster; aksi halde veri gelmeden yanıltıcı görünür.
+      u1 = onSnapshot(
+        kQ,
+        (s) => {
+          setKategoriler(s.docs.map((d) => d.data()));
+          katYuklendi = true;
+          tamamlandiKontrol();
+        },
+        () => {},
+      );
+      u2 = onSnapshot(
+        uQ,
+        (s) => {
+          setUrunler(s.docs.map((d) => d.data()));
+          urunYuklendi = true;
+          tamamlandiKontrol();
+        },
+        () => {},
+      );
     });
-    const u2 = onSnapshot(uQ, (s) => {
-      setUrunler(s.docs.map((d) => d.data()));
-      urunYuklendi = true;
-      tamamlandiKontrol();
-    });
+
     return () => {
-      u1();
-      u2();
+      authUnsub();
+      u1?.();
+      u2?.();
     };
   }, []);
 
