@@ -66,15 +66,24 @@ export function KasaShell({ kullanici, children }: Props) {
       // 'permission-denied' verir.
       if (otoGirisCalisti.current) return;
       otoGirisCalisti.current = true;
-      otoGirisYap().catch(() => {
+      // Mevcut oturumun rolünü KORU: garson (sahip:false) ise garson olarak
+      // yeniden giriş yap — aksi halde client oturumu düşen garson sessizce
+      // owner'a (sahip:true) yükselirdi.
+      otoGirisYap(kullanici.sahip ? undefined : 'garson').catch(() => {
         otoGirisCalisti.current = false;
       });
     });
     return () => unsub();
-  }, []);
+  }, [kullanici.sahip]);
 
   return (
     <div className="min-h-screen">
+      <a
+        href="#ana-icerik"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded-md focus:bg-primary focus:px-3 focus:py-2 focus:text-sm focus:text-primary-foreground"
+      >
+        İçeriğe atla
+      </a>
       <header className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center gap-2 px-3 py-1.5 sm:gap-4 sm:px-4 sm:py-2">
           <Link
@@ -99,38 +108,46 @@ export function KasaShell({ kullanici, children }: Props) {
             className="flex flex-1 items-stretch gap-1.5 sm:hidden"
             aria-label="Bölümler"
           >
-            {NAV.filter((n) => !n.sahipGerek || kullanici.sahip).map((n) => (
-              <Link
-                key={n.yol}
-                href={n.yol}
-                className={cn(
-                  'flex min-w-0 flex-1 basis-0 items-center justify-center rounded-md px-1 py-2 text-sm font-semibold leading-tight transition-colors',
-                  aktifMi(yol, garsonModu, n)
-                    ? 'bg-secondary text-secondary-foreground'
-                    : 'text-muted-foreground active:bg-secondary/60',
-                )}
-              >
-                <span className="truncate">{n.etiket}</span>
-              </Link>
-            ))}
+            {NAV.filter((n) => !n.sahipGerek || kullanici.sahip).map((n) => {
+              const aktif = aktifMi(yol, garsonModu, n);
+              return (
+                <Link
+                  key={n.yol}
+                  href={n.yol}
+                  aria-current={aktif ? 'page' : undefined}
+                  className={cn(
+                    'flex min-w-0 flex-1 basis-0 items-center justify-center rounded-md px-1 py-2 text-sm font-semibold leading-tight transition-colors',
+                    aktif
+                      ? 'bg-secondary text-secondary-foreground'
+                      : 'text-muted-foreground active:bg-secondary/60',
+                  )}
+                >
+                  <span className="truncate">{n.etiket}</span>
+                </Link>
+              );
+            })}
           </nav>
 
           {/* Masaüstü: yatay nav */}
           <nav className="hidden flex-1 items-center gap-1 text-sm sm:flex">
-            {NAV.filter((n) => !n.sahipGerek || kullanici.sahip).map((n) => (
-              <Link
-                key={n.yol}
-                href={n.yol}
-                className={cn(
-                  'rounded-md px-2.5 py-1',
-                  aktifMi(yol, garsonModu, n)
-                    ? 'bg-secondary text-secondary-foreground'
-                    : 'text-muted-foreground hover:text-foreground',
-                )}
-              >
-                {n.etiket}
-              </Link>
-            ))}
+            {NAV.filter((n) => !n.sahipGerek || kullanici.sahip).map((n) => {
+              const aktif = aktifMi(yol, garsonModu, n);
+              return (
+                <Link
+                  key={n.yol}
+                  href={n.yol}
+                  aria-current={aktif ? 'page' : undefined}
+                  className={cn(
+                    'rounded-md px-2.5 py-1',
+                    aktif
+                      ? 'bg-secondary text-secondary-foreground'
+                      : 'text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  {n.etiket}
+                </Link>
+              );
+            })}
           </nav>
 
           <div className="flex shrink-0 items-center">
@@ -147,7 +164,9 @@ export function KasaShell({ kullanici, children }: Props) {
         </div>
       )}
 
-      {children}
+      <main id="ana-icerik" tabIndex={-1}>
+        {children}
+      </main>
     </div>
   );
 }
