@@ -49,7 +49,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
+  // maximumScale KOYMA: dokunmatik POS'ta kullanıcı pinch-zoom yapabilmeli
+  // (erişilebilirlik). Zoom'u kısıtlamak yakınlaştırmayı tümden engelliyordu.
   themeColor: '#F4ECD3',
 };
 
