@@ -15,25 +15,37 @@ interface Props {
   children: React.ReactNode;
 }
 
+type Rol = 'garson' | 'kasiyer';
+
 interface NavItem {
   yol: string;
   etiket: string;
-  sahipGerek?: boolean;
+  /** Tanımlıysa yalnız bu role görünür; tanımsız = her role görünür.
+   *  garson = sahip:false, kasiyer = sahip:true (rapor/ayarları gören sahip). */
+  rol?: Rol;
   /** Bu sekmeyi aktif sayan ek yollar (alt sayfalar/ilgili akışlar). */
   altYollar?: string[];
 }
 
 const NAV: NavItem[] = [
-  { yol: '/kasa/masalar', etiket: 'Masalar', altYollar: ['/kasa/masa'] },
-  { yol: '/kasa/adisyonlar', etiket: 'Adisyonlar' },
-  { yol: '/admin/rapor', etiket: 'Rapor', sahipGerek: true },
+  // Garson: ana sayfa kısayolu + masalar (adisyonları görmesine gerek yok).
+  { yol: '/', etiket: 'Ana Sayfa', rol: 'garson' },
+  { yol: '/kasa/masalar', etiket: 'Masalar', rol: 'garson', altYollar: ['/kasa/masa'] },
+  // Kasiyer: adisyonlar + rapor + ayarlar (masaları görmesine gerek yok).
+  { yol: '/kasa/adisyonlar', etiket: 'Adisyonlar', rol: 'kasiyer' },
+  { yol: '/admin/rapor', etiket: 'Rapor', rol: 'kasiyer' },
   {
     yol: '/admin/ayarlar',
     etiket: 'Ayarlar',
-    sahipGerek: true,
+    rol: 'kasiyer',
     altYollar: ['/admin/menu', '/admin/masalar'],
   },
 ];
+
+const navGorunur = (n: NavItem, sahip: boolean): boolean => {
+  if (!n.rol) return true;
+  return n.rol === (sahip ? 'kasiyer' : 'garson');
+};
 
 const aktifMi = (mevcut: string, garsonModu: boolean, n: NavItem) => {
   // Bir masadan açılan adisyon detayı (garson akışı, ?garson=1) kavramsal olarak
@@ -108,7 +120,7 @@ export function KasaShell({ kullanici, children }: Props) {
             className="flex flex-1 items-stretch gap-1.5 sm:hidden"
             aria-label="Bölümler"
           >
-            {NAV.filter((n) => !n.sahipGerek || kullanici.sahip).map((n) => {
+            {NAV.filter((n) => navGorunur(n, kullanici.sahip)).map((n) => {
               const aktif = aktifMi(yol, garsonModu, n);
               return (
                 <Link
@@ -130,7 +142,7 @@ export function KasaShell({ kullanici, children }: Props) {
 
           {/* Masaüstü: yatay nav */}
           <nav className="hidden flex-1 items-center gap-1 text-sm sm:flex">
-            {NAV.filter((n) => !n.sahipGerek || kullanici.sahip).map((n) => {
+            {NAV.filter((n) => navGorunur(n, kullanici.sahip)).map((n) => {
               const aktif = aktifMi(yol, garsonModu, n);
               return (
                 <Link
