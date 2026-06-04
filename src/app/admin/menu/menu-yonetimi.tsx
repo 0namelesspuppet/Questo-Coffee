@@ -326,6 +326,7 @@ export function MenuYonetimi() {
             <input
               type="text"
               placeholder="Kategori adı"
+              aria-label="Kategori adı"
               value={katForm.veri.ad}
               onChange={(e) =>
                 setKatForm((f) => ({
@@ -340,6 +341,7 @@ export function MenuYonetimi() {
                 type="number"
                 min={0}
                 placeholder="Sıra"
+                aria-label="Kategori sırası"
                 value={katForm.veri.sira}
                 onChange={(e) =>
                   setKatForm((f) => ({
@@ -452,6 +454,7 @@ export function MenuYonetimi() {
                   <input
                     type="text"
                     placeholder="Ürün adı"
+                    aria-label="Ürün adı"
                     value={urunForm.veri.ad}
                     onChange={(e) =>
                       setUrunForm((f) => ({
@@ -466,6 +469,7 @@ export function MenuYonetimi() {
                   Açıklama (opsiyonel)
                   <textarea
                     placeholder="Açıklama"
+                    aria-label="Ürün açıklaması"
                     rows={2}
                     value={urunForm.veri.aciklama}
                     onChange={(e) =>

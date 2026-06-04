@@ -149,6 +149,7 @@ export function MasaYonetimi() {
           <input
             type="text"
             placeholder="Masa adı (örn. M3, Bahçe-2)"
+            aria-label="Masa adı"
             value={yeni.ad}
             onChange={(e) => setYeni((y) => ({ ...y, ad: e.target.value }))}
             className="flex-1 rounded-md border bg-background px-2 py-1.5 text-sm"
