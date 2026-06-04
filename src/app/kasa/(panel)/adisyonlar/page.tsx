@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { getAdminDb } from '@/lib/firebase/admin';
 import { formatTL } from '@/lib/utils/para';
 import { karsilastirMasaAdi } from '@/lib/utils/masa';
+import { CanliYenile } from '@/components/kasa/canli-yenile';
 import type { SiparisKalemi } from '@/types/model';
 
 export const dynamic = 'force-dynamic';
@@ -87,6 +88,15 @@ export default async function AdisyonlarSayfasi() {
 
   return (
     <div className="mx-auto max-w-6xl p-4 space-y-4">
+      <CanliYenile
+        izle={[
+          {
+            yol: `restoranlar/${restoranId}/adisyonlar`,
+            alan: 'durum',
+            deger: 'acik',
+          },
+        ]}
+      />
       <h1 className="text-2xl font-semibold">Açık Adisyonlar</h1>
       {kartlar.length === 0 ? (
         <p className="rounded-lg border bg-card p-8 text-center text-sm text-muted-foreground">

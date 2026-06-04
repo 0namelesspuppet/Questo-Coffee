@@ -13,6 +13,7 @@ import type {
 import { AdisyonuKapatBtn } from './kapat-btn';
 import { OdemeTalepleri } from '@/components/kasa/odeme-talepleri';
 import { KasiyerBolme } from '@/components/kasa/kasiyer-bolme';
+import { CanliYenile } from '@/components/kasa/canli-yenile';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -126,6 +127,16 @@ export default async function AdisyonDetay({
 
   return (
     <div className="mx-auto max-w-6xl p-4 space-y-4">
+      <CanliYenile
+        izle={[
+          {
+            yol: `restoranlar/${restoranId}/adisyonlar/${adisyonId}/siparisler`,
+          },
+          {
+            yol: `restoranlar/${restoranId}/adisyonlar/${adisyonId}/odemeTalepleri`,
+          },
+        ]}
+      />
       <Link
         href={garsonModu ? '/kasa/masalar' : '/kasa/adisyonlar'}
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground"
