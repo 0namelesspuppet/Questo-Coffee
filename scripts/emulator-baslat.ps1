@@ -17,7 +17,9 @@ $veriDir = 'emulator-veri'
 $meta = Join-Path $veriDir 'firebase-export-metadata.json'
 $gecerliExport = (Test-Path $meta) -and ((Get-Item $meta).Length -gt 0)
 
-$env:JAVA_TOOL_OPTIONS = '-Xmx256m'
+# Firestore emulator tum veriyi JVM heap'inde (in-memory) tutar; 256m yogun gunde
+# OutOfMemoryError ile cokebilir. 1024m guvenli tavan (zayif PC'de bile RAM yeter).
+$env:JAVA_TOOL_OPTIONS = '-Xmx1024m'
 
 $ortak = @('emulators:start', '--only', 'auth,firestore')
 
