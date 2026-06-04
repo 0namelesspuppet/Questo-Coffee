@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useOnay } from '@/components/ortak/onay-dialog';
+import { formatSure } from '@/lib/utils/sure';
 
 export function AdisyonuKapatBtn({
   adisyonId,
@@ -39,6 +40,14 @@ export function AdisyonuKapatBtn({
         const j = (await res.json().catch(() => ({}))) as { mesaj?: string };
         throw new Error(j.mesaj ?? 'Kapatılamadı.');
       }
+      const j = (await res.json().catch(() => ({}))) as {
+        oturmaSuresiSn?: number;
+      };
+      toast.success(
+        j.oturmaSuresiSn !== undefined
+          ? `Adisyon kapatıldı · Masa ${formatSure(j.oturmaSuresiSn)} oturdu`
+          : 'Adisyon kapatıldı.',
+      );
       router.replace('/kasa/adisyonlar');
       router.refresh();
     } catch (e) {

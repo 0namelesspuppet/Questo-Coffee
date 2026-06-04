@@ -3,6 +3,7 @@ import { getAdminDb } from '@/lib/firebase/admin';
 import { formatTL } from '@/lib/utils/para';
 import { karsilastirMasaAdi } from '@/lib/utils/masa';
 import { CanliYenile } from '@/components/kasa/canli-yenile';
+import { OturmaSuresi } from '@/components/kasa/oturma-suresi';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -17,6 +18,7 @@ interface AdisyonDoc {
   masaId: string;
   toplamKurus: number;
   siparisSayisi: number;
+  acilisAt?: { toMillis?: () => number };
 }
 
 interface MasaDoc {
@@ -29,6 +31,7 @@ interface MasaKart {
   acikAdisyonId: string | null;
   toplamKurus: number;
   siparisSayisi: number;
+  acilisMs: number | null;
 }
 
 export default async function AdisyonlarSayfasi() {
@@ -61,6 +64,7 @@ export default async function AdisyonlarSayfasi() {
         acikAdisyonId: acik?.id ?? null,
         toplamKurus: acik?.data.toplamKurus ?? 0,
         siparisSayisi: acik?.data.siparisSayisi ?? 0,
+        acilisMs: acik?.data.acilisAt?.toMillis?.() ?? null,
       };
     })
     .sort((a, b) => karsilastirMasaAdi(a.ad, b.ad));
@@ -115,8 +119,14 @@ export default async function AdisyonlarSayfasi() {
                   </div>
                   {acik ? (
                     <div className="space-y-0.5">
-                      <div className="text-xs text-muted-foreground">
-                        {k.siparisSayisi} sipariş
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>{k.siparisSayisi} sipariş</span>
+                        {k.acilisMs !== null && (
+                          <OturmaSuresi
+                            baslangicMs={k.acilisMs}
+                            className="tabular-nums"
+                          />
+                        )}
                       </div>
                       <div className="text-lg font-semibold tabular-nums">
                         {formatTL(k.toplamKurus)}

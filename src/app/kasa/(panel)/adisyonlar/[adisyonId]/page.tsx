@@ -14,6 +14,8 @@ import { AdisyonuKapatBtn } from './kapat-btn';
 import { OdemeTalepleri } from '@/components/kasa/odeme-talepleri';
 import { KasiyerBolme } from '@/components/kasa/kasiyer-bolme';
 import { CanliYenile } from '@/components/kasa/canli-yenile';
+import { OturmaSuresi } from '@/components/kasa/oturma-suresi';
+import { formatSure } from '@/lib/utils/sure';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -51,7 +53,22 @@ export default async function AdisyonDetay({
   const aRef = db.doc(`restoranlar/${restoranId}/adisyonlar/${adisyonId}`);
   const aSnap = await aRef.get();
   if (!aSnap.exists) notFound();
+  const aData = aSnap.data() as {
+    acilisAt?: { toMillis?: () => number };
+    kapanisAt?: { toMillis?: () => number };
+    oturmaSuresiSn?: number;
+  };
   const adisyon = { id: aSnap.id, ...aSnap.data() } as unknown as Adisyon;
+
+  // Oturma süresi: açıkken canlı (acilisAt'tan), kapalıyken kayıtlı
+  // oturmaSuresiSn — yoksa kapanisAt − acilisAt'tan hesaplanır.
+  const acilisMs = aData.acilisAt?.toMillis?.() ?? null;
+  const kapanisMs = aData.kapanisAt?.toMillis?.() ?? null;
+  const kapaliSureSn =
+    aData.oturmaSuresiSn ??
+    (acilisMs !== null && kapanisMs !== null
+      ? Math.max(0, Math.round((kapanisMs - acilisMs) / 1000))
+      : null);
 
   const [masaSnap, siparisSnap, talepSnap] = await Promise.all([
     db.doc(`restoranlar/${restoranId}/masalar/${adisyon.masaId}`).get(),
@@ -151,6 +168,24 @@ export default async function AdisyonDetay({
           <p className="text-sm text-muted-foreground">
             {adisyon.siparisSayisi} sipariş · {acik ? 'Açık' : 'Kapalı'}
           </p>
+          {acik
+            ? acilisMs !== null && (
+                <p className="text-sm text-muted-foreground">
+                  Oturma süresi:{' '}
+                  <OturmaSuresi
+                    baslangicMs={acilisMs}
+                    className="font-medium tabular-nums text-foreground"
+                  />
+                </p>
+              )
+            : kapaliSureSn !== null && (
+                <p className="text-sm text-muted-foreground">
+                  Toplam oturma süresi:{' '}
+                  <span className="font-medium tabular-nums text-foreground">
+                    {formatSure(kapaliSureSn)}
+                  </span>
+                </p>
+              )}
         </div>
         <div className="text-right">
           {odenmisToplam > 0 ? (

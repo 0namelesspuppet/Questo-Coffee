@@ -31,6 +31,7 @@ export async function POST(
     const aRef = db.doc(`restoranlar/${R}/adisyonlar/${id}`);
 
     let kalanKurus = 0;
+    let oturmaSuresiSn: number | undefined;
 
     await db.runTransaction(async (tx) => {
       const aSnap = await tx.get(aRef);
@@ -41,10 +42,19 @@ export async function POST(
         durum: string;
         masaId: string;
         toplamKurus: number;
+        acilisAt?: { toMillis?: () => number };
       };
       if (a.durum !== 'acik') {
         throw new AppError('zaten_kapali', 'Adisyon zaten kapalı.', 409);
       }
+
+      // Oturma süresi: açılıştan şimdiye (saniye). kapanisAt serverTimestamp
+      // olduğu için aynı tx içinde okunamaz; sunucu saatini (Date.now) baz alırız.
+      const acilisMs = a.acilisAt?.toMillis?.();
+      oturmaSuresiSn =
+        acilisMs !== undefined
+          ? Math.max(0, Math.round((Date.now() - acilisMs) / 1000))
+          : undefined;
 
       // Onaylanmış ödemeleri transaction içinde topla (tutarlılık için)
       const odenenSnap = await tx.get(
@@ -68,6 +78,7 @@ export async function POST(
       tx.update(aRef, {
         durum: 'kapali',
         kapanisAt: FieldValue.serverTimestamp(),
+        ...(oturmaSuresiSn !== undefined ? { oturmaSuresiSn } : {}),
         ...(zorla && kalanKurus > 0
           ? { zorlaKapatildi: true, zorlaKapatilanKurus: kalanKurus }
           : {}),
@@ -76,6 +87,7 @@ export async function POST(
 
     return Response.json({
       ok: true,
+      ...(oturmaSuresiSn !== undefined ? { oturmaSuresiSn } : {}),
       ...(zorla && kalanKurus > 0 ? { zorla: true, atlanan: kalanKurus } : {}),
     });
   } catch (e) {

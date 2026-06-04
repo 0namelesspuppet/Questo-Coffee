@@ -146,6 +146,9 @@ export interface Adisyon {
   acilisAt: Date;
   kapanisAt?: Date;
   siparisSayisi: number;
+  /** Masanın oturulan toplam süresi (saniye) — kapanışta yazılır:
+   *  kapanisAt − acilisAt. Ortalama oturma süresi gibi raporlar için. */
+  oturmaSuresiSn?: number;
 }
 
 export type OdemeTalebiDurumu = 'bekliyor' | 'odendi' | 'iptal';
