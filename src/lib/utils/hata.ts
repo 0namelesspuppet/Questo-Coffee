@@ -59,6 +59,18 @@ export const httpHata = (e: unknown): Response => {
       { status: 401 },
     );
   }
+  if (baglantiReddiHatasi(e)) {
+    // Emülatör henüz hazır değil (açılış ~25-40 sn penceresi) ya da geçici ağ
+    // hatası. Kalıcı 500 yerine 503 dön → istemci kısa aralıklarla tekrar denesin
+    // (sipariş yazımı stabil idempotency anahtarıyla güvenle tekrarlanabilir).
+    return Response.json(
+      {
+        kod: 'baglanti_hazir_degil',
+        mesaj: 'Sistem hazırlanıyor, lütfen birkaç saniye sonra tekrar deneyin.',
+      },
+      { status: 503 },
+    );
+  }
   const hata = e instanceof Error ? e : new Error(String(e));
   console.error('[questo] beklenmedik hata:', hata.message, hata);
   // Gerçek üretimde detay sızdırma; yerel/emülatör POS'ta teşhis için göster.
