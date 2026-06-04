@@ -1,9 +1,9 @@
 # Questo — Optimizasyon Backlog
 
 > 30-ajanli analiz avindan cikan, koda karsi dogrulanmis 142 bulgu.
-> `[x]` = uygulandi (Codex + Tier1 + Grup A + Grup B + Faz 1 + Faz 2).
+> `[x]` = uygulandi (Codex + Tier1 + Grup A/B + Faz 1-3 + perf/doc/a11y).
 
-**Durum:** 29 uygulandi, 113 bekliyor (toplam 142).
+**Durum:** 39 uygulandi, 103 bekliyor (toplam 142).
 
 ## Uygulananlar
 
@@ -11,6 +11,7 @@
 - [x] Idempotency anahtarı her tıkta yeniden üretiliyor — çift sipariş koruması etkisiz
 - [x] Viewport zoom kapali (maximumScale:1, kullanici yakinlastiramaz)
 - [x] esitOdemeTutariHesapla() tamamen test edilmemis - ceil/kalan/sinir kosullari korunmasiz
+- [x] Uygulama icin insan-okur KURULUM/README belgesi yok
 - [x] GarsonMenu: tum urun kartlari her sepet dokunusunda yeniden render oluyor (sicak mobil yol)
 - [x] Emülatör hazır değilken (ECONNREFUSED) sipariş/ödeme/kapatma route'larında 503+retry yok — veri yazımı sessizce 500'le kayboluyor
 - [x] Yedek doğrulaması yok — bozuk/eksik export sessizce 'başarılı' kabul ediliyor
@@ -20,14 +21,22 @@
 - [x] Kasa/Adisyon ekranlari gercek zamanli degil; tum guncellemeler manuel router.refresh ile, tam sayfa SSR yeniden okuma yapiyor
 - [x] Emülatör UI (port 4000) tek-kafe POS'ta gereksiz; ekstra Node process + RAM/CPU yiyor
 - [x] Emülatör UI '0.0.0.0'a bagli — admin arayuzu tum LAN'a aciliyor (guvenlik)
+- [x] menu-yonetimi.tsx onSnapshot auth hazir olmadan kuruluyor; permission hatasi/yeniden kurulum riski
 - [x] Kullanilmayan 3 bagimlilik: react-hook-form, @hookform/resolvers, class-variance-authority
 - [x] firebase-admin icin serverExternalPackages tanimlanmamis (build yavasliyor)
+- [x] Genel focus-visible / klavye odak gostergesi yok + tap-highlight kapali
 - [x] Idempotency anahtari her gonder denemesinde yeniden uretiliyor: Wi-Fi kopukken retry DUPLIKE siparis riski
+- [x] Tasima/yedek checklist'i (kritik gitignore'lu dosyalar) dokumante degil
+- [x] Node surum on-kosulu pinlenmemis; seed --env-file Node 20.6+ gerektiriyor ama kontrol edilmiyor
+- [x] Smart App Control (SAC) tuzagi kurulum oncesi adim olarak belge ile yakalanmiyor
+- [x] verifySessionCookie checkRevoked=true her server isteginde auth emulatorune ekstra okuma yapiyor
+- [x] Kapanis: tum node.exe ve java.exe blanket-kill ediliyor
 - [x] Eşzamanlı ödeme talepleri transaction dışında — aşırı ödeme / kalan-altı yarış koşulu
 - [x] odenmisTutarKurus() icin saf reduce cekirdegi ayiklanip test edilemiyor (Firestore'a gomulu)
 - [x] UI kisiPayi gosterimi ile route esitOdemeTutariHesapla tahsilati arasinda son-dilim tutarsizligi - hicbir tarafta test yok
 - [x] kasiyer-talep: odeme yazimi transaction disinda - esZamanli iki odeme adisyon toplamini asabilir (cift tahsilat)
 - [x] odeme-talebi onayla: bekleyen musteri talebini kalan tutar dogrulamadan 'odendi' yapar - asiri odeme/cift dusme
+- [x] taskkill /F /IM node.exe ve java.exe TUM node/java proseslerini oldurur
 - [x] firebase.json'da kullanilmayan functions+ui emülatorleri ve functions config parse maliyeti
 - [x] optimizePackageImports'ta etkisiz/yanlis girisler (zod, firebase/app, firebase/auth)
 - [x] Ödeme onaylama route'u transaction'sız ve aşırı-ödeme guard'ı yok
@@ -36,30 +45,27 @@
 - [x] odeme-talebi/onayla route'u olu kod - hicbir akis 'bekliyor' durumu uretmiyor (yetki yuzeyi gereksiz acik)
 - [x] firebase-debug.log ve firestore-debug.log temizlenmiyor, her acilista buyur
 - [x] firebase.json'da functions(5001) ve UI(4000) emulatorleri tanimli ama baslatilmiyor — kafa karistirici/portlar bos tutuluyor
+- [x] prefers-reduced-motion kurali HIC yok; sonsuz animasyonlar her zaman calisiyor
 
-## Bekleyenler (oncelik: etki -> dusuk efor -> dusuk risk)
+## Bekleyenler (cogunlukla dusuk-etkili polish; oncelik: etki -> dusuk efor)
 
-### Yuksek etki (7)
+### Yuksek etki (6)
 
 - [ ] **Setup endpoint /api/admin/rol uretimde de acik ve emulator kosuluna bagli degil - token sizarsa kim olursa sahip olabilir**  
   `security` | efor:S risk:low | src/app/api/admin/rol/route.ts:22 ; src/app/api/admin/rol/route.ts:36 ; src/app/api/admin/rol/route.ts:43  
-  Bu route'u sadece emulator/kurulum modunda calisacak sekilde kisitla (emulatorOrtami() degilse 403). Token dogrulamasini sabit-zamanli karsilastirma (crypto.timingSafeEqual) ile yap. Atama basarili olduktan sonra kullanimi tek seferlik kilan bir isaret yaz (Firestore'da 'kurulumTamamlandi' bayragi) ve sonraki cagrilari reddet. Uretim/kurulum disi ortamda endpoint'i tamamen kapat.
-
-- [ ] **Uygulama icin insan-okur KURULUM/README belgesi yok**  
-  `ux` | efor:S risk:low | (KURULUM.md eksik - kok) ; design-reference\README.md:1 ; Questo'yu Kur.bat:30-62  
-  Repo kokune KURULUM.md (saf ASCII degil, .md oldugu icin UTF-8 serbest) ekle. Icerik: (1) On-kosullar: Node.js LTS (>=20.6, --env-file destegi sart), Temurin/Adoptium JDK 21, ~2 GB bos disk, Windows 10/11. (2) Sirali kurulum: SAC'i kapat (tek-yonlu uyarisiyla) -> 'Questo'yu Kur.bat' cift tikla -> tamamlaninca 'Questo Yonetim' kisayolu. (3) Sorun-giderme tablosu: '.bat Notepad ile aciliyor'->SAC/MO
+  Bu route'u sadece emulator/kurulum modunda calisacak sekilde kisitla (emulatorOrtami() degilse 403). Token dogrulamasini sabit-zamanli karsilastirma (crypto.timingSafeEqual) ile yap. Atama basarili olduktan sonra kullanimi tek seferlik kilan bir isaret yaz (Firestore'da 'kurulumTamamlandi' bayragi) ve sonraki cagrilari reddet. Uretim/kurulum disi ortamda end
 
 - [ ] **idempotency koleksiyonu emulatorde sonsuz buyur (TTL calismaz)**  
   `resource` | efor:M risk:low | src/lib/siparis/servis.ts:308 ; src/components/kasa/garson-menu.tsx:304 ; firestore.rules:30  
-  (a) Yedek/bakim scriptine periyodik temizlik ekle: emulator calisirken Admin SDK ile `idempotency` icindeki `expireAt < now` dokumanlarini batch-delete et (gunde bir kez yeter). (b) Daha iyisi: idempotency anahtarini istemcide sepet icerigi+masa hash'inden uretip kisa pencerede sabit tut; boylece cift-tik korumasi gercekten calisir ve dokuman sayisi patlamaz. (c) Yerel tek-kafe senaryosunda idempo
+  (a) Yedek/bakim scriptine periyodik temizlik ekle: emulator calisirken Admin SDK ile `idempotency` icindeki `expireAt < now` dokumanlarini batch-delete et (gunde bir kez yeter). (b) Daha iyisi: idempotency anahtarini istemcide sepet icerigi+masa hash'inden uretip kisa pencerede sabit tut; boylece cift-tik korumasi gercekten calisir ve dokuman sayisi patlamaz
 
 - [ ] **Musteri adisyon/hesap fisi cikti yolu hic yok**  
   `ux` | efor:M risk:low | src/app/api/adisyon/[id]/kapat/route.ts:77 ; src/app/kasa/(panel)/adisyonlar/[adisyonId]/page.tsx:308 ; src/app/kasa/(panel)/adisyonlar/[adisyonId]/kapat-btn.tsx:42 ; src/app/globals.css:411  
-  Adisyon detay sayfasina yalniz kalan=0 iken gorunen bir 'Hesap Fisi' butonu ekle. Mevcut window.print() desenini (yazdir-btn.tsx) yeniden kullan: adisyon icin gizli bir .fis-belge bolgesi render et (masa adi, restoran ad/sehir, siparis kalemleri k.adet x k.ad + araToplamKurus, odeme yontemi, genel toplam, tarih-saat) ve @media print ile yalniz bu bolgeyi bas. Bulut yok; tamamen yerel window.print 
+  Adisyon detay sayfasina yalniz kalan=0 iken gorunen bir 'Hesap Fisi' butonu ekle. Mevcut window.print() desenini (yazdir-btn.tsx) yeniden kullan: adisyon icin gizli bir .fis-belge bolgesi render et (masa adi, restoran ad/sehir, siparis kalemleri k.adet x k.ad + araToplamKurus, odeme yontemi, genel toplam, tarih-saat) ve @media print ile yalniz bu bolgeyi bas
 
 - [ ] **Mutfak bileti (kitchen ticket) otomatik basilmiyor**  
   `ux` | efor:L risk:low | src/components/kasa/garson-menu.tsx:296 ; src/app/api/kasiyer/siparis/route.ts:18 ; src/lib/siparis/servis.ts:279 ; src/app/api/siparis/[id]/durum/route.ts:15  
-  Iki yerel secenek: (1) Dusuk efor: siparis onayi sonrasi garson-menu onay penceresine 'Mutfak bileti yazdir' butonu ekle; gizli .mutfak-bilet bolgesi (masa adi, gunlukNo, kalemler + secimler + notlar; FIYAT YOK) render edip @media print ile bas. (2) Daha saglam: kasiyer paneline mutfak ekrani (/kasa/mutfak) ekle, durum=yeni/hazirlaniyor siparisleri kart olarak gostersin, durum/route.ts gecisleriyl
+  Iki yerel secenek: (1) Dusuk efor: siparis onayi sonrasi garson-menu onay penceresine 'Mutfak bileti yazdir' butonu ekle; gizli .mutfak-bilet bolgesi (masa adi, gunlukNo, kalemler + secimler + notlar; FIYAT YOK) render edip @media print ile bas. (2) Daha saglam: kasiyer paneline mutfak ekrani (/kasa/mutfak) ekle, durum=yeni/hazirlaniyor siparisleri kart olar
 
 - [ ] **Kapali adisyonlar/siparisler hicbir zaman arsivlenmez/silinmez -> emulator verisi ve rapor sorgusu surekli buyur**  
   `perf-runtime` | efor:L risk:medium | src/app/api/adisyon/[id]/kapat/route.ts:68 ; src/app/admin/rapor/page.tsx:69 ; src/app/admin/rapor/page.tsx:75  
@@ -67,17 +73,13 @@
 
 - [ ] **Hicbir route handler / para route'u icin integration/smoke testi yok - emulator-tabanli vitest projesi fizibil**  
   `reliability` | efor:L risk:medium | src/app/api/adisyon/[id]/kasiyer-talep/route.ts:42-87 ; src/app/api/adisyon/[id]/kapat/route.ts:35-80 ; src/app/api/adisyon/[id]/odeme-talebi/[talepId]/onayla/route.ts:30-43 ; vitest.config.ts:1-14 ; src/lib/firebase/admin.ts:45-54  
-  Emulator-tabanli ayri bir vitest projesi/dosya grubu kur (orn. tests/integration/*.itest.ts, ayri include + setupFiles ile FIRESTORE_EMULATOR_HOST='127.0.0.1:8080' ve FIREBASE_AUTH_EMULATOR_HOST set). Maliyet: testler emulator calisiyorken kosmali (CI/local'de 'npm run emulators' on-kosulu) - bu yuzden ana 'vitest' (saf birim) suit'inden AYIR (orn. test:int script). Auth guard apiKasiyer'i atlamak
+  Emulator-tabanli ayri bir vitest projesi/dosya grubu kur (orn. tests/integration/*.itest.ts, ayri include + setupFiles ile FIRESTORE_EMULATOR_HOST='127.0.0.1:8080' ve FIREBASE_AUTH_EMULATOR_HOST set). Maliyet: testler emulator calisiyorken kosmali (CI/local'de 'npm run emulators' on-kosulu) - bu yuzden ana 'vitest' (saf birim) suit'inden AYIR (orn. test:int 
 
-### Orta etki (42)
+### Orta etki (34)
 
 - [ ] **Seed her acilista tam Node + firebase-admin prosesi spawn ediyor (idempotent atlasada)**  
   `perf-startup` | efor:S risk:low | Questo'yu Başlat.bat:93-96 ; scripts/seed.mjs:233-249  
   Seed'i kosula bagla: emulator-veri/ icinde gecerli export VARSA (firebase-export-metadata.json) seed'i hic spawn etme - veri zaten geri yuklenecek. Sadece emulator-veri yok/bos oldugunda (ilk kurulum) seed'i calistir. Bu kontrol baslat.bat icinde tek bir 'if exist' ile yapilabilir; tam Node prosesi spawn'i tamamen onlenir.
-
-- [ ] **menu-yonetimi.tsx onSnapshot auth hazir olmadan kuruluyor; permission hatasi/yeniden kurulum riski**  
-  `reliability` | efor:S risk:low | src/app/admin/menu/menu-yonetimi.tsx:69  
-  menu-yonetimi.tsx'te de diger bilesenlerdeki gibi `onAuthStateChanged` ile `authHazir` state'i kurup useEffect bagimlilik dizisine ekle ve `if (!authHazir) return;` ile gate'le. Bu, gereksiz listener yeniden-kurulumunu ve ilk render permission-denied hatasini onler.
 
 - [ ] **KasiyerBolme: turetilmis degerler her render'da yeniden hesaplaniyor + tumKalemler.find() ile O(n^2)**  
   `perf-runtime` | efor:S risk:low | src/components/kasa/kasiyer-bolme.tsx:61 ; src/components/kasa/kasiyer-bolme.tsx:81 ; src/components/kasa/kasiyer-bolme.tsx:147  
@@ -85,7 +87,7 @@
 
 - [ ] **firebase/app-check client bundle'a giriyor ama emulator modunda hic calismaz**  
   `perf-startup` | efor:S risk:low | src/lib/firebase/client.ts:22 ; src/lib/firebase/client.ts:48 ; src/lib/firebase/client.ts:52  
-  App-check'i kosullu/lazy yap: top-level importu kaldir, baslat() icinde yalnizca !emulatorAcik && siteKey dogru iken `const { initializeAppCheck, ReCaptchaV3Provider } = await import('firebase/app-check')` ile dinamik import et. Veya yerel-kalici karar verildiyse (LAN'da recaptcha anlamsiz) app-check kodunu tamamen kaldir. Boylece modul client bundle'dan tamamen cikar.
+  App-check'i kosullu/lazy yap: top-level importu kaldir, baslat() icinde yalnizca !emulatorAcik && siteKey dogru iken `const { initializeAppCheck, ReCaptchaV3Provider } = await import('firebase/app-check')` ile dinamik import et. Veya yerel-kalici karar verildiyse (LAN'da recaptcha anlamsiz) app-check kodunu tamamen kaldir. Boylece modul client bundle'dan tam
 
 - [ ] **rapor-sifirla batch'leri atomik değil — kısmi başarısızlıkta yarım sıfırlanmış rapor**  
   `reliability` | efor:S risk:low | src/app/api/admin/rapor-sifirla/route.ts:69 ; src/app/api/admin/rapor-sifirla/route.ts:80  
@@ -97,43 +99,23 @@
 
 - [ ] **Gercek bulut Firebase yapilandirmasi (.env.bulut.local) ve service-account.json proje kokunde duruyor**  
   `security` | efor:S risk:low | .env.bulut.local:14 ; service-account.json ; src/lib/firebase/admin.ts:45  
-  service-account.json yalnizca bulut deploy gerektiginde makinede bulunsun; yerel emulator POS'unda HIC gerekmedigi icin (admin.ts:45-54 emulatorde service account istemiyor) kafe PC'sine kopyalanmasin. Aktarim/yedek listelerinden ve yedekler/ klasorunden haric tut. .env.bulut.local'i de sadece deploy makinesinde birak. Dosya izinlerini daralt (yalniz calistiran kullanici okuyabilsin).
+  service-account.json yalnizca bulut deploy gerektiginde makinede bulunsun; yerel emulator POS'unda HIC gerekmedigi icin (admin.ts:45-54 emulatorde service account istemiyor) kafe PC'sine kopyalanmasin. Aktarim/yedek listelerinden ve yedekler/ klasorunden haric tut. .env.bulut.local'i de sadece deploy makinesinde birak. Dosya izinlerini daralt (yalniz calisti
 
 - [ ] **next start -H 0.0.0.0 tum ag arayuzlerine acik; guvenlik HTTP basliklari tanimli degil**  
   `security` | efor:S risk:low | package.json:9 ; next.config.ts:8 ; src/middleware.ts:10  
-  (1) Mumkunse bind'i kafe Wi-Fi alt agina ozel IP'ye sinirla ya da Windows Guvenlik Duvari ile 3000 portunu yalniz LAN alt agina ac. (2) next.config.ts'e headers() ekleyerek tum yanitlara X-Frame-Options: DENY (veya CSP frame-ancestors 'none'), X-Content-Type-Options: nosniff, Referrer-Policy: same-origin, Permissions-Policy ekle. Dusuk efor, clickjacking ve gomme yuzeyini kapatir.
+  (1) Mumkunse bind'i kafe Wi-Fi alt agina ozel IP'ye sinirla ya da Windows Guvenlik Duvari ile 3000 portunu yalniz LAN alt agina ac. (2) next.config.ts'e headers() ekleyerek tum yanitlara X-Frame-Options: DENY (veya CSP frame-ancestors 'none'), X-Content-Type-Options: nosniff, Referrer-Policy: same-origin, Permissions-Policy ekle. Dusuk efor, clickjacking ve 
 
 - [ ] **Form inputlari yalniz placeholder kullaniyor; label/aria-label yok (kategori, masa, arama)**  
   `ux` | efor:S risk:low | src/app/admin/menu/menu-yonetimi.tsx:300-325 ; src/app/admin/masalar/masa-yonetimi.tsx:148-154 ; src/app/admin/masalar/masa-yonetimi.tsx:187-192 ; src/components/kasa/garson-menu.tsx:452-458  
   Etiketsiz her input'a ya gorunur <label htmlFor> ekle ya da en azindan aria-label ver (arama icin aria-label='Urun ara' yeterli). Placeholder'i etiketin yerine degil yardimci ipucu olarak birak. Modal urun formundaki dogru desen (sarmalayan label) bu alanlara da uygulanabilir.
 
-- [ ] **Genel focus-visible / klavye odak gostergesi yok + tap-highlight kapali**  
-  `ux` | efor:S risk:low | src/app/globals.css:83-86 ; src/components/kasa/kasiyer-bolme.tsx:196-209 ; src/app/kasa/(panel)/kasa-shell.tsx:102-134  
-  globals.css @layer base icine global bir kural ekle: butona/linke/input'a :focus-visible'da gorunur ring (outline 2px solid hsl(var(--ring)) + outline-offset) uygula. Tek noktadan tum etkilesimli ogeleri kapsar. tap-highlight'i tamamen seffaf birakmak yerine hafif bir aktif-durum geri bildirimi birak.
-
 - [ ] **OdemeTalebiIstegi zod semasi (para istegi) test edilmemis - tabanKurus=0 ve kisiSayisi sinirlari**  
   `correctness` | efor:S risk:low | src/lib/utils/zod-semalar.ts:112-133 ; tests/zod-semalar.test.ts:1-105 ; src/app/api/adisyon/[id]/kasiyer-talep/route.ts:55-87  
-  tests/zod-semalar.test.ts'e OdemeTalebiIstegi vakalari ekle: (1) {yontem:'tam'} gecerli; (2) {yontem:'esit', kisiSayisi:1} REDDEDILMELI (min 2) - UI'nin 1'e izin verdigi tutarsizligi belgeler; (3) {yontem:'esit', kisiSayisi:2, tabanKurus:0} su an GECIYOR - bunun istenmeyen 0-tutar talebe yol actigini gosteren test + server-tarafi 0-tutar guard'i onerisi (route'a toplamKurus<=0 ise AppError); (4) {
+  tests/zod-semalar.test.ts'e OdemeTalebiIstegi vakalari ekle: (1) {yontem:'tam'} gecerli; (2) {yontem:'esit', kisiSayisi:1} REDDEDILMELI (min 2) - UI'nin 1'e izin verdigi tutarsizligi belgeler; (3) {yontem:'esit', kisiSayisi:2, tabanKurus:0} su an GECIYOR - bunun istenmeyen 0-tutar talebe yol actigini gosteren test + server-tarafi 0-tutar guard'i onerisi (rou
 
 - [ ] **Baglanti rozeti navigator.onLine'a guveniyor: telefon Wi-Fi'da ama PC erisilemezse YANLIS 'Bagli' gosterir**  
   `reliability` | efor:S risk:low | src/components/kasa/baglanti-rozeti.tsx:12 ; src/app/kasa/(panel)/kasa-shell.tsx:137  
-  Gercek erisilebilirlik yoklamasi ekle: hafif bir GET /api/health (yeni; sadece 200 + {ok:true} donen, auth gerektirmeyen kucuk route) olustur ve rozet bunu periyodik (or. 10-15 sn) ve 'online' olayinda fetch ile yokla (kisa AbortController timeout 2-3 sn, cache:'no-store'). Uc durum goster: Bagli (health 200) / Sunucu yok (radyo var ama health basarisiz) / Cevrimdisi (navigator.onLine=false). navi
-
-- [ ] **Tasima/yedek checklist'i (kritik gitignore'lu dosyalar) dokumante degil**  
-  `reliability` | efor:S risk:low | .gitignore:4 ; .gitignore:11 ; src\lib\firebase\admin.ts:42 ; scripts\emulator-baslat.ps1:6  
-  KURULUM.md/GUNCELLEME.md icine 'Tasima checklist' bolumu ekle: ZORUNLU kopyala = emulator-veri\ (canli veri), .env.local (ayarlar). service-account.json YEREL emulator modunda GEREKMEZ (sadece bulut moduna gecilirse) - bunu zorunlu listeden cikar. opsiyonel yedekler\ (gecmis zipler). Bunlarin git ile GELMEDIGINI acikca belirt. Ek olarak yedek scriptleri zaten emulators:export aldigindan, 'tasimada
-
-- [ ] **Node surum on-kosulu pinlenmemis; seed --env-file Node 20.6+ gerektiriyor ama kontrol edilmiyor**  
-  `reliability` | efor:S risk:low | Questo'yu Kur.bat:33 ; package.json:13 ; scripts\seed.mjs:12  
-  (1) Kok package.json'a engines ekle: {"node": ">=20.6.0"}. (2) Kur.bat'taki Node kontrolune minimum surum dogrulamasi ekle (node -v ciktisini parse edip <20.6 ise net hata ver: '--env-file icin Node 20.6+ gerekli'). (3) KURULUM.md on-kosulunda 'Node.js LTS 20.6 veya uzeri (mevcut LTS onerilir)' yaz. Bu, 'kuruldu diyor ama demo veri gelmiyor' tipi sessiz hatayi onler.
-
-- [ ] **Smart App Control (SAC) tuzagi kurulum oncesi adim olarak belge ile yakalanmiyor**  
-  `ux` | efor:S risk:low | Questo'yu Kur.bat:124 ; scripts\engeli-kaldir.bat:18 ; (KURULUM.md eksik)  
-  KURULUM.md'nin EN BASINA, '0. adim' olarak SAC kontrolu/kapatmasini koy: 'Windows Guvenligi > Uygulama ve tarayici denetimi > Akilli Uygulama Denetimi > Kapali. (Tek-yonlu: kapatinca Windows sifirlamadan tekrar acilamaz.)' ve '.bat Notepad ile aciliyorsa SAC veya MOTW sebebidir' tanisi. Belge .md oldugu icin bu adimi insan once okuyup uygulayabilir; .bat icine gomulu uyari SAC takiliyken zaten oku
-
-- [ ] **verifySessionCookie checkRevoked=true her server isteginde auth emulatorune ekstra okuma yapiyor**  
-  `perf-runtime` | efor:S risk:medium | src/lib/auth/session.ts:23  
-  checkRevoked'u false yap (verifySessionCookie(c)) ve revoke'u yalnizca kritik aksiyonlarda (cikis/rol degisikligi sonrasi) tetikle; ya da kisa sureli bir in-memory cache ile ayni cookie icin saniyede bir kez revoke kontrol et. Yerel/tek kiraci ortamda imza dogrulamasi (checkRevoked=false) zaten yeterli guvenlik saglar. Bu, her sayfa gezinmesi ve API cagrisindaki gizli getUser okumasini kaldirir.
+  Gercek erisilebilirlik yoklamasi ekle: hafif bir GET /api/health (yeni; sadece 200 + {ok:true} donen, auth gerektirmeyen kucuk route) olustur ve rozet bunu periyodik (or. 10-15 sn) ve 'online' olayinda fetch ile yokla (kisa AbortController timeout 2-3 sn, cache:'no-store'). Uc durum goster: Bagli (health 200) / Sunucu yok (radyo var ama health basarisiz) / C
 
 - [ ] **Kapanış yedeği ile emülatörün --export-on-exit'i aynı klasöre yarışıyor — çift yazım / bozulma riski**  
   `reliability` | efor:S risk:medium | scripts/emulator-baslat.ps1:26 ; scripts/kapanis-yedek.ps1:46  
@@ -141,27 +123,23 @@
 
 - [ ] **window.print() her seferinde manuel tarayici diyalogu; sessiz/otomatik yazdirma yok**  
   `ux` | efor:S risk:medium | src/app/admin/rapor/yazdir-btn.tsx:15  
-  Sistem zaten production build + 'next start' ile yerel calistigi ve baslatma .bat'i tarayiciyi aciyor; .bat'in Chrome/Edge start satirlarina '--kiosk-printing' (veya ayri bir varsayilan-yazici profili) ekle. Boylece window.print() diyalogsuz varsayilan termal yaziciya basar. Alternatif (daha fazla efor, tam yerel): yerel kucuk Node yardimci surec uzerinden ESC/POS USB yaziciya dogrudan baski; ilk 
-
-- [ ] **Kapanis: tum node.exe ve java.exe blanket-kill ediliyor**  
-  `reliability` | efor:M risk:low | Questo'yu Durdur.bat:24-26 ; Questo'yu Durdur.bat:50-52 ; package.json:14  
-  Sadece Questo'ya ait PID'leri oldur: kapanista hedef portlari (3000,8080,9099,4400,4500,9150) dinleyen OwningProcess PID'lerini bul (zaten kill-ports mantigi var) ve yalniz onlari Stop-Process et. Boylece hem daha guvenli hem '/IM' genel taramasindan daha hizli/kesin olur. Cocuk java/node proseslerinin de portu dinledigini dogrula (firebase CLI -> java zinciri kacmamali).
+  Sistem zaten production build + 'next start' ile yerel calistigi ve baslatma .bat'i tarayiciyi aciyor; .bat'in Chrome/Edge start satirlarina '--kiosk-printing' (veya ayri bir varsayilan-yazici profili) ekle. Boylece window.print() diyalogsuz varsayilan termal yaziciya basar. Alternatif (daha fazla efor, tam yerel): yerel kucuk Node yardimci surec uzerinden E
 
 - [ ] **functions emülatörü hicbir zaman calismiyor; SLA ozelligi yerelde sessizce devre disi (olu kod)**  
   `correctness` | efor:M risk:low | firebase.json:6 ; firebase.json:17 ; scripts\emulator-baslat.ps1:22 ; functions\src\index.ts:34 ; src\types\model.ts:136  
-  Karar verin: (a) SLA uyarisi isteniyorsa SLA mantigini client/SSR tarafina tasiyin — siparis listesi zaten kasiyer panelinde dinleniyor; olusturulduAt + Date.now() esik kontrolu istemcide yapilabilir, functions hic gerekmez. (b) SLA istenmiyorsa firebase.json:6-13 functions blogunu ve :17 functions emülatör satirini kaldirin, functions/ klasorunu ve Kaldir.bat:24 'functions\node_modules' adimini s
+  Karar verin: (a) SLA uyarisi isteniyorsa SLA mantigini client/SSR tarafina tasiyin — siparis listesi zaten kasiyer panelinde dinleniyor; olusturulduAt + Date.now() esik kontrolu istemcide yapilabilir, functions hic gerekmez. (b) SLA istenmiyorsa firebase.json:6-13 functions blogunu ve :17 functions emülatör satirini kaldirin, functions/ klasorunu ve Kaldir.b
 
 - [ ] **Kapanista export basarisizligi sessizce yutuluyor — force-kill'den once exit kodu kontrol edilmiyor (veri kaybi penceresi)**  
   `reliability` | efor:M risk:low | Questo'yu Durdur.bat:18 ; scripts\kapanis-yedek.ps1:39  
-  Durdur.bat:18'de kapanis-yedek.ps1 cikis kodunu kontrol edin; basarisizsa (exit 1) java.exe'yi HEMEN kill etmeyip (satir 26) kullaniciya net uyari + tekrar deneme sansi verin (emülatör hala ayakta). kapanis-yedek.ps1:39-43 export basarisizliginda sessizce exit 1 donuyor ve Durdur.bat bunu yutuyor — 'kapanista yedek alinamadi, son 60 dk veri riskte' durumu kullaniciya gorunmuyor. Bu, force-kill kay
+  Durdur.bat:18'de kapanis-yedek.ps1 cikis kodunu kontrol edin; basarisizsa (exit 1) java.exe'yi HEMEN kill etmeyip (satir 26) kullaniciya net uyari + tekrar deneme sansi verin (emülatör hala ayakta). kapanis-yedek.ps1:39-43 export basarisizliginda sessizce exit 1 donuyor ve Durdur.bat bunu yutuyor — 'kapanista yedek alinamadi, son 60 dk veri riskte' durumu ku
 
 - [ ] **Adisyonlar listesinde N+1 okuma deseni: her acik adisyon icin ayri siparisler okumasi**  
   `perf-runtime` | efor:M risk:low | src/app/kasa/(panel)/adisyonlar/page.tsx:51  
-  Iki secenek: (a) Kart ozeti icin gereken urun adlarini siparis yazarken adisyon dokumanina denormalize bir `kalemOzeti` alani olarak tutup tek adisyon okumasiyla goster (N+1 tamamen kalkar). (b) En azindan kart ozetini kaldirip yalnizca adisyon dokumanindaki mevcut `siparisSayisi` + `toplamKurus` ile goster (zaten adisyon dokumaninda var), detay sadece adisyona tiklayinca okunsun. Tek kafe icin (a
+  Iki secenek: (a) Kart ozeti icin gereken urun adlarini siparis yazarken adisyon dokumanina denormalize bir `kalemOzeti` alani olarak tutup tek adisyon okumasiyla goster (N+1 tamamen kalkar). (b) En azindan kart ozetini kaldirip yalnizca adisyon dokumanindaki mevcut `siparisSayisi` + `toplamKurus` ile goster (zaten adisyon dokumaninda var), detay sadece adisy
 
 - [ ] **GarsonMenu tum urunleri filtresiz dinliyor; stoktaMi/aktif kategori filtresi clientta yapiliyor**  
   `perf-runtime` | efor:M risk:low | src/components/kasa/garson-menu.tsx:85 ; src/components/kasa/garson-menu.tsx:95  
-  Siparis alma ekraninda urun/kategori statik sayilabilir: onSnapshot yerine bir kez `getDocs` + sayfa icinde cache; garson menuye girdiginde guncel cekilir, oturum boyunca tekrar okunmaz. Stok bilgisi siparis yazarken sunucuda transaction'da dogrulaniyor (servis.ts:159-181), o yuzden anlik stok push'una gerek yok. `where('stoktaMi','!=',false)` ONERILMEZ: Firestore != alani eksik dokumanlari dislar
+  Siparis alma ekraninda urun/kategori statik sayilabilir: onSnapshot yerine bir kez `getDocs` + sayfa icinde cache; garson menuye girdiginde guncel cekilir, oturum boyunca tekrar okunmaz. Stok bilgisi siparis yazarken sunucuda transaction'da dogrulaniyor (servis.ts:159-181), o yuzden anlik stok push'una gerek yok. `where('stoktaMi','!=',false)` ONERILMEZ: Fir
 
 - [ ] **GarsonMenu sepetTopla/sepetAdet ve sepetIcerigi JSX'i her render'da yeniden hesaplaniyor**  
   `perf-runtime` | efor:M risk:low | src/components/kasa/garson-menu.tsx:270 ; src/components/kasa/garson-menu.tsx:156 ; src/components/kasa/garson-menu.tsx:354  
@@ -181,7 +159,7 @@
 
 - [ ] **Kenarlik (border) kontrasti dusuk — input/checkbox/secim sinirlari WCAG 1.4.11 gecmiyor**  
   `ux` | efor:M risk:low | src/app/globals.css:42-43 ; src/components/kasa/garson-menu.tsx:879-885 ; src/components/kasa/odeme-talepleri.tsx:116-120  
-  Etkilesimli ogelerin (input, checkbox/radio, secilebilir opsiyon karti, ayrik buton) kenarliklarini en az 3:1 olacak sekilde koyulastir — --border'i form/secim baglamlarinda daha koyu bir tona al ya da ayri --input-border tokeni tanimla. muted-foreground/70 gibi dusuk tintleri en az tam muted-foreground'a cikar. Salt-metin muted-foreground tonlarini degistirmeye gerek yok.
+  Etkilesimli ogelerin (input, checkbox/radio, secilebilir opsiyon karti, ayrik buton) kenarliklarini en az 3:1 olacak sekilde koyulastir — --border'i form/secim baglamlarinda daha koyu bir tona al ya da ayri --input-border tokeni tanimla. muted-foreground/70 gibi dusuk tintleri en az tam muted-foreground'a cikar. Salt-metin muted-foreground tonlarini degistir
 
 - [ ] **Termal yazici (58/80mm ESC/POS) icin print CSS yok; yalniz A4**  
   `ux` | efor:M risk:low | src/app/globals.css:412 ; src/app/globals.css:477  
@@ -189,15 +167,15 @@
 
 - [ ] **Wi-Fi kopukken gonderme: kullaniciya 'baglanti yok' ozel geri bildirimi ve guvenli yeniden-dene yok; offline kuyruk yok**  
   `ux` | efor:M risk:low | src/components/kasa/garson-menu.tsx:331 ; src/lib/utils/hata.ts:30  
-  (a) gonder() catch'inde network hatasini ayirt et: `if (e instanceof TypeError \|\| !navigator.onLine) toast.error('Baglanti yok. Siparis gonderilemedi, birkac saniye sonra tekrar deneyin.')` — sepet KORUNUR (zaten setSepet([]) sadece basaride cagriliyor, iyi). (b) Stabil idempotency anahtari (onceki bulgu) ile 1-2 kez otomatik kisa-gecikmeli retry (sadece network hatasinda) ekle; idempotent oldug
+  (a) gonder() catch'inde network hatasini ayirt et: `if (e instanceof TypeError \|\| !navigator.onLine) toast.error('Baglanti yok. Siparis gonderilemedi, birkac saniye sonra tekrar deneyin.')` — sepet KORUNUR (zaten setSepet([]) sadece basaride cagriliyor, iyi). (b) Stabil idempotency anahtari (onceki bulgu) ile 1-2 kez otomatik kisa-gecikmeli retry (sadece n
 
 - [ ] **Kur.bat firebase-tools'u global kuruyor ama surum/varlik garantisi zayif, PATH gecikmesi sessiz hataya yol aciyor**  
   `reliability` | efor:M risk:low | Questo'yu Kur.bat:67 ; scripts\emulator-baslat.ps1:26 ; package.json:34  
-  (1) KURULUM.md'de 'Kur.bat bittikten sonra TUM .bat/pencereleri kapatip Yonetim'i yeniden ac' notunu net ver (PATH yenilensin). (2) Daha saglam: firebase-tools'u projeye devDependency olarak ekleyip (sabit surum) npm scriptlerinde 'npx firebase ...' kullan; boylece PATH'e ve global kuruluma bagimlilik kalkar, surum repoyla pinlenir ve kafe PC'sinde tutarli olur. (3) Kur.bat'in son ekranina 'emulat
+  (1) KURULUM.md'de 'Kur.bat bittikten sonra TUM .bat/pencereleri kapatip Yonetim'i yeniden ac' notunu net ver (PATH yenilensin). (2) Daha saglam: firebase-tools'u projeye devDependency olarak ekleyip (sabit surum) npm scriptlerinde 'npx firebase ...' kullan; boylece PATH'e ve global kuruluma bagimlilik kalkar, surum repoyla pinlenir ve kafe PC'sinde tutarli o
 
 - [ ] **Kapanis yolu seri firebase CLI cagrisi + 2sn+1sn sabit timeout ile yavasliyor**  
   `perf-startup` | efor:M risk:medium | Questo'yu Durdur.bat:16-29 ; scripts/kapanis-yedek.ps1:30-37  
-  1) Sabit 'timeout /t 2' yerine portlari kisa araliklarla yoklayan (or. 200ms x max 10) bekleme kullan - portlar serbest kalinca hemen devam et (Baslat.bat'taki TcpClient deseni hazir). 2) Export'u hizlandirma icin once en dusuk riskli adimi uygula (sabit bekleme -> poll); CLI yerine hub REST export'a gecis swap mantigini etkiledigi icin ikincil ve dikkatli yapilmali.
+  1) Sabit 'timeout /t 2' yerine portlari kisa araliklarla yoklayan (or. 200ms x max 10) bekleme kullan - portlar serbest kalinca hemen devam et (Baslat.bat'taki TcpClient deseni hazir). 2) Export'u hizlandirma icin once en dusuk riskli adimi uygula (sabit bekleme -> poll); CLI yerine hub REST export'a gecis swap mantigini etkiledigi icin ikincil ve dikkatli y
 
 - [ ] **Masalar ve Adisyonlar listeleri canli degil — yeni siparis girince kasiyer manuel yenileme yapmali (router.refresh yok)**  
   `ux` | efor:M risk:medium | src/app/kasa/(panel)/masalar/page.tsx:33 ; src/app/kasa/(panel)/adisyonlar/page.tsx:32  
@@ -215,21 +193,17 @@
   `correctness` | efor:M risk:medium | src/app/api/adisyon/[id]/kasiyer-talep/route.ts:64 ; src/lib/utils/zod-semalar.ts:104  
   Urun yonteminde transaction icinde her secilen kalemin siparisini oku, birimFiyatKurus'u dogrula, araToplamKurus=sunucudaki birimFiyat*adet olarak SUNUCUDA yeniden hesapla, istenen adetin kalan odenmemis adedi asmadigini kontrol et. Istemci araToplamKurus'unu yalnizca gosterim icin kullan.
 
-- [ ] **taskkill /F /IM node.exe ve java.exe TUM node/java proseslerini oldurur**  
-  `reliability` | efor:M risk:medium | Questo'yu Durdur.bat:25 ; Questo'yu Durdur.bat:51  
-  Durdur.bat'i port-bazli sonlandirmaya gecir (kill-ports gibi: 3000/8080/9099/4400/4500 portlarini tutan PID'leri oldur) ve global `/IM node.exe`,`/IM java.exe`'yi yalniz son care olarak, tercihen CommandLine'da proje yolu/`firebase`/`next` gecen prosesleri filtreleyerek kullan (Baslat.bat:50'deki Get-CimInstance CommandLine filtreleme deseni gibi).
-
 - [ ] **Her acilista .next tam silinip yeniden build (kaynak degismese bile sik tetiklenir)**  
   `perf-startup` | efor:M risk:medium | scripts/uygulama-baslat.ps1:31 ; scripts/uygulama-baslat.ps1:40  
-  Rebuild kararini icerik-hash bazli yapmak en saglami; pratikte LastWriteTime yeterliyse, gereksiz `.next` tam-silmeyi azaltmak icin: build basarisizsa zaten dev'e dusuluyor, basariliysa .next'i her seferinde silmek yerine Next'in kendi inkremental cache'ine guven. En azindan .env.local kopyalamasinin (Baslat.bat:19-22) dosya zamanini gereksiz degistirmedigini garanti et (icerik aynisa dokunma).
+  Rebuild kararini icerik-hash bazli yapmak en saglami; pratikte LastWriteTime yeterliyse, gereksiz `.next` tam-silmeyi azaltmak icin: build basarisizsa zaten dev'e dusuluyor, basariliysa .next'i her seferinde silmek yerine Next'in kendi inkremental cache'ine guven. En azindan .env.local kopyalamasinin (Baslat.bat:19-22) dosya zamanini gereksiz degistirmedigin
 
 - [ ] **page.tsx:103-125 birim-fiyat geri-hesabi (round) ve tuketim-haritasi edge case testleri yok**  
   `correctness` | efor:M risk:medium | src/app/kasa/(panel)/adisyonlar/[adisyonId]/page.tsx:103-125 ; src/app/kasa/(panel)/adisyonlar/[adisyonId]/page.tsx:186-191  
-  Eslestirme/tuketim cekirdegini saf modul olarak ayikla (orn. siparisKalemOdenenHesapla(siparisler, talepler)): girdi olarak duz nesneler alsin, Firestore'a dokunmasin. Testler: (1) tam bolunen birim - 4 cay araToplam=2000, birimFiyat=500, talep 2 birim -> odenen [2]; (2) bolunemeyen ANAHTAR uyusmazligi - birimFiyat=334 ama talep araToplam=1000/adet=3 -> round=333, eslesme KAYBINI gosteren regresyo
+  Eslestirme/tuketim cekirdegini saf modul olarak ayikla (orn. siparisKalemOdenenHesapla(siparisler, talepler)): girdi olarak duz nesneler alsin, Firestore'a dokunmasin. Testler: (1) tam bolunen birim - 4 cay araToplam=2000, birimFiyat=500, talep 2 birim -> odenen [2]; (2) bolunemeyen ANAHTAR uyusmazligi - birimFiyat=334 ama talep araToplam=1000/adet=3 -> roun
 
 - [ ] **Yerel uretim build'inde offline cache yok: Wi-Fi anlik kopmasinda garson menusu komple bos ekran**  
   `reliability` | efor:M risk:medium | public/sw.js:17 ; src/app/sw-register.tsx:13 ; src/lib/utils/ortam.ts:14 ; src/components/kasa/garson-menu.tsx:91  
-  SADECE YEREL icin minimal bir SW stratejisi: (a) sw-register.tsx'teki emulatorOrtami() erken-return'unu kaldirip SW'i yerelde de kaydet (veya NEXT_PUBLIC_USE_EMULATOR'dan bagimsiz, 'gercek bulut degil ama uretim build' icin ayri bir bayrak kullan). (b) public/sw.js'e: install'da app shell + statik chunk'lar icin precache; navigasyon ve _next/static icin stale-while-revalidate; /api/* ve ozellikle 
+  SADECE YEREL icin minimal bir SW stratejisi: (a) sw-register.tsx'teki emulatorOrtami() erken-return'unu kaldirip SW'i yerelde de kaydet (veya NEXT_PUBLIC_USE_EMULATOR'dan bagimsiz, 'gercek bulut degil ama uretim build' icin ayri bir bayrak kullan). (b) public/sw.js'e: install'da app shell + statik chunk'lar icin precache; navigasyon ve _next/static icin stal
 
 - [ ] **Adisyon kapatma TOCTOU + ayni masada cift acik adisyon riski**  
   `reliability` | efor:L risk:medium | src/app/api/adisyon/[id]/kapat/route.ts:50 ; src/app/api/adisyon/[id]/kasiyer-talep/route.ts:32 ; src/lib/siparis/servis.ts:118  
@@ -239,11 +213,11 @@
   `perf-runtime` | efor:L risk:medium | src/app/admin/rapor/page.tsx:69 ; src/app/api/admin/rapor-sifirla/route.ts:57  
   Tek-kiraci oldugu icin gunluk ozet (rollup) dokumani yazmak (siparis yazimi sirasinda gunluk ciro/sayac dokumanina kategori/saat kirilimi eklemek) raporu O(1) okuma yapar. Minimum mudahale: kapali-veri purge (bulgu #2) bu sorgunun buyumesini de sinirlar.
 
-### Dusuk etki (64)
+### Dusuk etki (63)
 
 - [ ] **Build tetikleyicisinde .env.local var; baslat.bat onu her ilk kurulumda 'dokunuyor'**  
   `perf-startup` | efor:S risk:low | scripts/uygulama-baslat.ps1:26-31 ; Questo'yu Başlat.bat:17-22  
-  Build-tetikleme mantigini icerik-hash temelli yap (or. src+public+config dosyalarinin hash'i .next/.questo-build-hash ile karsilastir) ya da en azindan .env.local'i tetikleyici listesinden cikar (emulator ayarlari Next build ciktisini etkilemiyor; sadece runtime env). copy islemini de 'yoksa kopyala' ile sinirla (zaten oyle) ama tetikleyiciden cikarmak en garantili cozum.
+  Build-tetikleme mantigini icerik-hash temelli yap (or. src+public+config dosyalarinin hash'i .next/.questo-build-hash ile karsilastir) ya da en azindan .env.local'i tetikleyici listesinden cikar (emulator ayarlari Next build ciktisini etkilemiyor; sadece runtime env). copy islemini de 'yoksa kopyala' ile sinirla (zaten oyle) ama tetikleyiciden cikarmak en ga
 
 - [ ] **Next.js telemetry kapali degil — build+start'a I/O ve agir-baslangic ekliyor**  
   `perf-startup` | efor:S risk:low | package.json:5-17 ; scripts/uygulama-baslat.ps1:13-15  
@@ -255,7 +229,7 @@
 
 - [ ] **Cok katmanli proses spawn zinciri (wscript -> cmd -> npm -> node/powershell)**  
   `perf-startup` | efor:S risk:low | Questo'yu Başlat.bat:58-71 ; Questo'yu Başlat.bat:93-96 ; package.json:12-13  
-  npm araciligini atla: gizli-calistir.vbs cagrilarinda 'npm run emulators' yerine dogrudan 'powershell -NoProfile -ExecutionPolicy Bypass -File scripts/emulator-baslat.ps1', 'npm run seed' yerine 'node --env-file=.env.local scripts/seed.mjs' kullan. Her arka plan isinde bir npm/Node yuklenme overhead'i kalkar. Komut tanimlarinin package.json ile senkron kalmasina dikkat et.
+  npm araciligini atla: gizli-calistir.vbs cagrilarinda 'npm run emulators' yerine dogrudan 'powershell -NoProfile -ExecutionPolicy Bypass -File scripts/emulator-baslat.ps1', 'npm run seed' yerine 'node --env-file=.env.local scripts/seed.mjs' kullan. Her arka plan isinde bir npm/Node yuklenme overhead'i kalkar. Komut tanimlarinin package.json ile senkron kalma
 
 - [ ] **kill-ports listesinde kullanilmayan port (4000) ve eksik kapsamlar**  
   `code-quality` | efor:S risk:low | package.json:14 ; scripts/emulator-baslat.ps1:22  
@@ -271,7 +245,7 @@
 
 - [ ] **auth emülatörü gerekli — kaldirma onerilmemeli (dogrulama: gerekli)**  
   `reliability` | efor:S risk:low | firebase.json:15 ; src\lib\firebase\client.ts:72 ; firestore.rules:10  
-  Auth emülatörünü oldugu gibi birakin. client.ts:72 connectAuthEmulator ile kasiyer girisi yapiliyor, seed.mjs:325/332 createUser+setCustomUserClaims ile rol claim'i atiyor, firestore.rules:10-17 kasiyerMi()/sahipMi() request.auth.token.rol claim'ine dayaniyor — auth olmadan kurallar reddeder, giris calismaz. firebase.json:15 auth host 0.0.0.0 telefon LAN girisi icin dogru; client.ts:70 host=window
+  Auth emülatörünü oldugu gibi birakin. client.ts:72 connectAuthEmulator ile kasiyer girisi yapiliyor, seed.mjs:325/332 createUser+setCustomUserClaims ile rol claim'i atiyor, firestore.rules:10-17 kasiyerMi()/sahipMi() request.auth.token.rol claim'ine dayaniyor — auth olmadan kurallar reddeder, giris calismaz. firebase.json:15 auth host 0.0.0.0 telefon LAN gir
 
 - [ ] **--export-on-exit, kapanis-yedek.ps1 ile cakisik/gereksiz; force-kill'de zaten calismiyor**  
   `reliability` | efor:S risk:low | scripts\emulator-baslat.ps1:26 ; Questo'yu Durdur.bat:18 ; scripts\kapanis-yedek.ps1:9  
@@ -279,7 +253,7 @@
 
 - [ ] **kill-ports ve Durdur.bat port listeleri tutarsiz — UI/Hub portlari Durdur'da yok**  
   `reliability` | efor:S risk:low | package.json:14 ; Questo'yu Durdur.bat:31  
-  Once UI'yi kapatin (ust bulgu). Sonra package.json:14 kill-ports listesini gercekten kullanilan portlarla sinirlayin: UI yoksa 4000 (ve reserved 4500/9150) kaldirilabilir; 3000(next)+8080(firestore)+9099(auth) ve Hub gerekirse 4400 kalir. Boylece kill-ports daha hizli (her port icin Get-NetTCPConnection pahali) ve Durdur.bat:31 dogrulama listesiyle tutarli olur. NOT: Durdur.bat:25-26 blanket taskk
+  Once UI'yi kapatin (ust bulgu). Sonra package.json:14 kill-ports listesini gercekten kullanilan portlarla sinirlayin: UI yoksa 4000 (ve reserved 4500/9150) kaldirilabilir; 3000(next)+8080(firestore)+9099(auth) ve Hub gerekirse 4400 kalir. Boylece kill-ports daha hizli (her port icin Get-NetTCPConnection pahali) ve Durdur.bat:31 dogrulama listesiyle tutarli o
 
 - [ ] **singleProjectMode etkisi sinirli; .firebaserc demo-questo ile uyumlu (dogrulama)**  
   `code-quality` | efor:S risk:low | firebase.json:19 ; .firebaserc:3 ; .env.local:26  
@@ -299,7 +273,7 @@
 
 - [ ] **Persistent IndexedDB cache aktif ama force-dynamic SSR sayfalar bu cache'ten faydalanamiyor (cift okuma yolu)**  
   `resource` | efor:S risk:low | src/lib/firebase/client.ts:91  
-  Bulgu #1 ile birlikte ele alinmali: en cok degisen kasa ekranlarini client onSnapshot'a tasiyinca mevcut persistentLocalCache otomatik devreye girer (tekrar acilislarda local cache'ten aninda render + sadece delta network). Ayrica tek-sekme kullanimi GARANTILIYSE `persistentSingleTabManager` daha az IndexedDB senkron yuku getirir; birden fazla sekme/cihaz ihtimali varsa mevcut multi-tab manager'da
+  Bulgu #1 ile birlikte ele alinmali: en cok degisen kasa ekranlarini client onSnapshot'a tasiyinca mevcut persistentLocalCache otomatik devreye girer (tekrar acilislarda local cache'ten aninda render + sadece delta network). Ayrica tek-sekme kullanimi GARANTILIYSE `persistentSingleTabManager` daha az IndexedDB senkron yuku getirir; birden fazla sekme/cihaz ih
 
 - [ ] **kategoriUrunleri ve aramaSonuc filtrelemesi O(kategori x urun) ve her urun snapshot'unda calisiyor**  
   `perf-runtime` | efor:S risk:low | src/components/kasa/garson-menu.tsx:124 ; src/components/kasa/garson-menu.tsx:113  
@@ -405,10 +379,6 @@
   `reliability` | efor:S risk:low | scripts/yedek-periodic.ps1:121  
   Donguye saglik kontrolu ekle: ust uste N (or. 3) basarisiz export'tan sonra 'emulator durmus' deyip prosesi sonlandir (exit). Alternatif: her dongude 8080/9099 portunu kontrol et, kapaliysa kisa bekleyip cik.
 
-- [ ] **prefers-reduced-motion kurali HIC yok; sonsuz animasyonlar her zaman calisiyor**  
-  `ux` | efor:S risk:low | src/app/globals.css:171-263 ; src/app/rol-kartlari.tsx:93 ; src/app/admin/loading.tsx  
-  globals.css sonuna global bir reduced-motion blogu ekle: prefers-reduced-motion: reduce altinda fiilen calisan animasyonlari (Tailwind animate-spin/animate-pulse ve kullanilan anim-sheet-in/anim-fade-in/anim-rise/anim-fly-to-cart/page-flip gibi) kapat/kisalt (animation: none veya animation-duration: 0.01ms). Reduced-motion destegi gercek bir WCAG 2.3.3 eksigidir; tek satirlik global blok ile kapat
-
 - [ ] **Durum yalnizca renkle iletiliyor (renk-bagimli bilgi)**  
   `ux` | efor:S risk:low | src/components/kasa/garson-menu.tsx:480-494 ; src/components/kasa/garson-menu.tsx:879-885 ; src/app/kasa/(panel)/masalar/page.tsx:86-100  
   Renkle iletilen secili-olma durumlarina ikincil gosterge ekle: secili kategori chip'ine aria-current='true', secili opsiyona tik/isaret ikonu. Masa kartinda bos/dolu zaten 'Acik' rozeti metni + 'Bos' metni ile ikincil gosterge var (sorun degil).
@@ -423,11 +393,11 @@
 
 - [ ] **Restoran modelinde fis altbilgisi/adres/telefon/vergi alanlari yok**  
   `ux` | efor:S risk:low | src/types/model.ts:1 ; src/app/admin/rapor/page.tsx:48  
-  Restoran dokumanina opsiyonel adres, telefon, fisAltNot (or. 'Bizi tercih ettiginiz icin tesekkurler') ve istenirse vergiNo alanlari ekle; bunu yapmadan once model.ts'e bir Restoran tipi tanimlamak da iyi olur (su an meta inline okunuyor). Fis/print CSS bu alanlari kosullu render etsin. Tek kiraci oldugu icin tek dokuman; migration gerekmez, alanlar opsiyonel kalir. Tamamen yerel.
+  Restoran dokumanina opsiyonel adres, telefon, fisAltNot (or. 'Bizi tercih ettiginiz icin tesekkurler') ve istenirse vergiNo alanlari ekle; bunu yapmadan once model.ts'e bir Restoran tipi tanimlamak da iyi olur (su an meta inline okunuyor). Fis/print CSS bu alanlari kosullu render etsin. Tek kiraci oldugu icin tek dokuman; migration gerekmez, alanlar opsiyone
 
 - [ ] **Birkac .ps1 betiginde non-ASCII karakter var; sag-tik 'PowerShell ile calistir' yolunda ayristirma riski**  
   `build` | efor:S risk:low | scripts\yedek-periodic.ps1:1 ; scripts\kapanis-yedek.ps1:1 ; scripts\yedek-al-elle.ps1:1 ; scripts\yonetim-gui.ps1:1  
-  Tutarlilik ve gelecekteki duzenleme guvenligi icin bu .ps1 dosyalarini da saf ASCII'ye cevir (Turkce harfleri ASCII karsiliklariyla: ç->c, ş->s vb.), VEYA kesin cozum olarak dosyalari UTF-8 with BOM kaydet (PowerShell 5.1 BOM'u dogru okur). En azindan elle/sag-tikla calistirilabilen yedek-al-elle.ps1 ve kapanis-yedek.ps1 oncelikli. Kontrol komutu MEMORY'de mevcut: ([IO.File]::ReadAllBytes($f) \| ?
+  Tutarlilik ve gelecekteki duzenleme guvenligi icin bu .ps1 dosyalarini da saf ASCII'ye cevir (Turkce harfleri ASCII karsiliklariyla: ç->c, ş->s vb.), VEYA kesin cozum olarak dosyalari UTF-8 with BOM kaydet (PowerShell 5.1 BOM'u dogru okur). En azindan elle/sag-tikla calistirilabilen yedek-al-elle.ps1 ve kapanis-yedek.ps1 oncelikli. Kontrol komutu MEMORY'de m
 
 - [ ] **Periodic + kapanis export ayri Node process spawn ediyor — weak PC'de I/O/CPU spike; 'degismediyse atla' optimizasyonu**  
   `perf-runtime` | efor:M risk:low | scripts\yedek-periodic.ps1:52 ; scripts\kapanis-yedek.ps1:33  
@@ -435,7 +405,7 @@
 
 - [ ] **Emülatör log gurultusu kontrol edilmiyor — uzun oturumda buyuyen emulator.log + disk I/O**  
   `resource` | efor:M risk:low | scripts\emulator-baslat.ps1:22 ; Questo'yu Başlat.bat:60  
-  emulator.log oturum-ici rotasyon/truncation ekleyin. Başlat.bat:54-55 baslangicta emulator.log'u siliyor (iyi) ama oturum tum gun acik kalirsa log surekli buyur. Pratik: periyodik truncation veya boyut esigi asilirsa yedek-periodic.ps1 icinde log'u kirpma. Firebase CLI emülatör verbosity bayragi sunmadigindan en pratik cozum dosya rotasyonu. Etki dusuk; disk dolmasini onler.
+  emulator.log oturum-ici rotasyon/truncation ekleyin. Başlat.bat:54-55 baslangicta emulator.log'u siliyor (iyi) ama oturum tum gun acik kalirsa log surekli buyur. Pratik: periyodik truncation veya boyut esigi asilirsa yedek-periodic.ps1 icinde log'u kirpma. Firebase CLI emülatör verbosity bayragi sunmadigindan en pratik cozum dosya rotasyonu. Etki dusuk; disk
 
 - [ ] **Rapor collectionGroup sorgusu tum kiracilari okuyup clientta path prefix ile filtreliyor**  
   `perf-runtime` | efor:M risk:low | src/app/admin/rapor/page.tsx:75 ; src/app/api/admin/rapor-sifirla/route.ts:63  
@@ -443,7 +413,7 @@
 
 - [ ] **Garson menu listenerlari kullanici menuden ayrildiktan sonra siparis onayinda hala acik kalabiliyor; ama asil sorun her urun ekleme akisinda tam menu yeniden okumasi**  
   `perf-runtime` | efor:M risk:low | src/components/kasa/garson-menu.tsx:75 ; src/app/kasa/(panel)/masa/[masaId]/page.tsx:43  
-  Urun/kategori verisini panel layout seviyesinde bir React context/provider'da bir kez getDocs ile yukleyip ekleme akislari arasinda paylas; GarsonMenu her mount'ta sifirdan dinleyici kurmasin. Real-time gereksinimi dusuk (stok sunucuda dogrulaniyor). Not: mevcut cleanup zaten listener'lari kapatiyor (sizinti yok), asil kazanim tekrar mount basina yeniden okuma/dinleyici-kurulum maliyetini kaldirma
+  Urun/kategori verisini panel layout seviyesinde bir React context/provider'da bir kez getDocs ile yukleyip ekleme akislari arasinda paylas; GarsonMenu her mount'ta sifirdan dinleyici kurmasin. Real-time gereksinimi dusuk (stok sunucuda dogrulaniyor). Not: mevcut cleanup zaten listener'lari kapatiyor (sizinti yok), asil kazanim tekrar mount basina yeniden oku
 
 - [ ] **Adisyon detay sayfasinda odeme/kalem hesaplari her render'da tum siparis+talep dokumanlari uzerinde yeniden isleniyor (sunucu CPU)**  
   `perf-runtime` | efor:M risk:low | src/app/kasa/(panel)/adisyonlar/[adisyonId]/page.tsx:103  
@@ -479,7 +449,7 @@
 
 - [ ] **kasiyer-bolme.tsx turetilmis hesaplar componente gomulu - test edilemez + O(n) find seciliToplam'da**  
   `code-quality` | efor:M risk:low | src/components/kasa/kasiyer-bolme.tsx:77-93 ; src/components/kasa/kasiyer-bolme.tsx:147-160  
-  Saf fonksiyonlari ayri modul (orn. src/lib/siparis/bolme-hesap.ts) olarak ayikla: seciliToplamHesapla(secimMap, kalemler), kisiPayiHesapla(taban, kisiSayisi), esitTabanBelirle(esitTaban, kalan). seciliToplam icin O(n) lookup: tumKalemler'i bir Map<key,item>'a cevirip find yerine get kullan (test kolayligi icin, perf ikincil). Sonra testler: kisiPayiHesapla(1000,3)===334; seciliToplamHesapla(Map{'a
+  Saf fonksiyonlari ayri modul (orn. src/lib/siparis/bolme-hesap.ts) olarak ayikla: seciliToplamHesapla(secimMap, kalemler), kisiPayiHesapla(taban, kisiSayisi), esitTabanBelirle(esitTaban, kalan). seciliToplam icin O(n) lookup: tumKalemler'i bir Map<key,item>'a cevirip find yerine get kullan (test kolayligi icin, perf ikincil). Sonra testler: kisiPayiHesapla(1
 
 - [ ] **Print bolgesi izolasyonu hardcoded .rapor-belge'ye bagli; cok-belge icin yeniden kullanilamaz**  
   `code-quality` | efor:M risk:low | src/app/globals.css:417  
@@ -487,11 +457,11 @@
 
 - [ ] **PWA standalone (ana ekrana ekle) offline'da bos/hata ekrani: start_url '/' icin offline fallback yok**  
   `ux` | efor:M risk:low | src/app/manifest.ts:9 ; public/sw.js:17 ; src/app/layout.tsx:39  
-  1. bulgudaki SW'i etkinlestirdikten sonra: navigasyon istekleri icin cache-first/SWR app shell + basarisizlikta minimal bir offline fallback HTML ('/offline' veya precache'li statik sayfa) don; bu sayfa 'Sunucuya ulasilamiyor. Wi-Fi baglantisini ve kafe bilgisayarinin acik oldugunu kontrol edin. Otomatik yeniden denenecek.' mesaji + periyodik /api/health yoklamasi ile baglanti gelince otomatik rel
+  1. bulgudaki SW'i etkinlestirdikten sonra: navigasyon istekleri icin cache-first/SWR app shell + basarisizlikta minimal bir offline fallback HTML ('/offline' veya precache'li statik sayfa) don; bu sayfa 'Sunucuya ulasilamiyor. Wi-Fi baglantisini ve kafe bilgisayarinin acik oldugunu kontrol edin. Otomatik yeniden denenecek.' mesaji + periyodik /api/health yok
 
 - [ ] **Agir kosullu modallar next/dynamic ile lazy yuklenmiyor**  
   `perf-startup` | efor:M risk:medium | src/app/admin/menu/menu-yonetimi.tsx:20 ; src/app/kasa/(panel)/adisyonlar/[adisyonId]/page.tsx:14 ; src/app/kasa/(panel)/adisyonlar/[adisyonId]/page.tsx:15 ; src/components/kasa/kasiyer-bolme.tsx:1 ; src/components/kasa/odeme-talepleri.tsx:1  
-  Net ve guvenli olan: menu-yonetimi.tsx (client) icindeki UrunOpsiyonlariModal'i next/dynamic ile ssr:false lazy yap — sadece Sliders butonuna basinca yuklenir. KasiyerBolme ve OdemeTalepleri Server Component (page.tsx) icinde oldugundan ssr:false ONERILMEZ (derleme hatasi); bunlari lazy yapmak istenirse once kucuk bir 'use client' wrapper'a tasinmalari gerekir — ekstra efor/risk getirir, oncelik d
+  Net ve guvenli olan: menu-yonetimi.tsx (client) icindeki UrunOpsiyonlariModal'i next/dynamic ile ssr:false lazy yap — sadece Sliders butonuna basinca yuklenir. KasiyerBolme ve OdemeTalepleri Server Component (page.tsx) icinde oldugundan ssr:false ONERILMEZ (derleme hatasi); bunlari lazy yapmak istenirse once kucuk bir 'use client' wrapper'a tasinmalari gerek
 
 - [ ] **Oto-giris 'devre disi' kosulu yalniz emulator sinyaline bagli - yerel uretim build'inde de aktif**  
   `security` | efor:M risk:medium | src/app/api/auth/oto-giris/route.ts:12 ; src/lib/utils/ortam.ts:14 ; .env.local:23  
