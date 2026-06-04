@@ -55,6 +55,9 @@ for %%f in (emulator.log nextjs.log seed.log yedek.log) do (
     if exist "%LOG%\%%f" del /q "%LOG%\%%f"
 )
 
+rem Kok firebase/firestore debug loglari her acilista buyur - temizle
+del /q firebase-debug.log firestore-debug.log ui-debug.log 2>nul
+
 rem [2/5] Emulator (gizli pencere, vbs launcher)
 echo   [2/5] Emulator baslatiliyor (gizli, log: %LOG%\emulator.log)...
 wscript "%~dp0scripts\gizli-calistir.vbs" "emulator.log" "npm run emulators"
