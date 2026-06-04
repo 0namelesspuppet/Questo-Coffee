@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { esitOdemeTutariHesapla } from '@/lib/siparis/odeme';
+import {
+  esitOdemeTutariHesapla,
+  odenenToplamKurus,
+} from '@/lib/siparis/odeme';
 
 describe('esitOdemeTutariHesapla', () => {
   it('tek kişi tüm adisyonu öder', () => {
@@ -51,5 +54,23 @@ describe('esitOdemeTutariHesapla', () => {
       expect(kalan).toBe(0); // tam tahsilat
       expect(topla).toBe(toplam); // ne eksik ne fazla — fazla tahsilat olmaz
     }
+  });
+});
+
+describe('odenenToplamKurus', () => {
+  it('yalnızca durum=odendi taleplerini toplar', () => {
+    const talepler = [
+      { durum: 'odendi', toplamKurus: 1000 },
+      { durum: 'bekliyor', toplamKurus: 500 }, // sayılmaz
+      { durum: 'odendi', toplamKurus: 250 },
+      { durum: 'iptal', toplamKurus: 999 }, // sayılmaz
+    ];
+    expect(odenenToplamKurus(talepler)).toBe(1250);
+  });
+
+  it('boş liste ve eksik toplamKurus güvenli (0)', () => {
+    expect(odenenToplamKurus([])).toBe(0);
+    expect(odenenToplamKurus([{ durum: 'odendi' }])).toBe(0);
+    expect(odenenToplamKurus([{ toplamKurus: 100 }])).toBe(0); // durum yok
   });
 });

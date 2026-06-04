@@ -1,10 +1,19 @@
-import type { DocumentReference, Firestore } from 'firebase-admin/firestore';
+import type { DocumentReference } from 'firebase-admin/firestore';
 
 /**
- * Adisyonun şu ana kadar onaylanmış (durum=odendi) ödeme talepleri toplamı.
- * Sunucu tarafında çağrılır; race condition oluşmasın diye mümkünse
- * transaction içinde çağırılmamalı — kısıtlı sayıda doküman okuduğu için
- * dış read olarak kullanılır.
+ * Onaylanmış (durum=odendi) ödeme taleplerinin toplam tutarı — SAF fonksiyon.
+ * Firestore'dan bağımsız test edilebilir (saf çekirdek).
+ */
+export const odenenToplamKurus = (
+  talepler: ReadonlyArray<{ durum?: string; toplamKurus?: number }>,
+): number =>
+  talepler
+    .filter((t) => t.durum === 'odendi')
+    .reduce((acc, t) => acc + (t.toplamKurus ?? 0), 0);
+
+/**
+ * Adisyonun şu ana kadar onaylanmış ödeme talepleri toplamı (Firestore okur).
+ * Saf çekirdeği odenenToplamKurus'tur.
  */
 export async function odenmisTutarKurus(
   adisyonRef: DocumentReference,
@@ -13,10 +22,8 @@ export async function odenmisTutarKurus(
     .collection('odemeTalepleri')
     .where('durum', '==', 'odendi')
     .get();
-  return snap.docs.reduce(
-    (acc, d) =>
-      acc + ((d.data() as { toplamKurus?: number }).toplamKurus ?? 0),
-    0,
+  return odenenToplamKurus(
+    snap.docs.map((d) => d.data() as { durum?: string; toplamKurus?: number }),
   );
 }
 
