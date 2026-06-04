@@ -1,9 +1,9 @@
 # Questo — Optimizasyon Backlog
 
 > 30-ajanli analiz avindan cikan, koda karsi dogrulanmis 142 bulgu. Etki/Efor/Risk ile onceliklendirildi.
-> `[x]` = uygulandi (Codex + Tier1 + Grup A).
+> `[x]` = uygulandi (Codex + Tier1 + Grup A + Grup B).
 
-**Durum:** 10 uygulandi, 132 bekliyor (toplam 142).
+**Durum:** 13 uygulandi, 129 bekliyor (toplam 142).
 
 ## Uygulananlar
 
@@ -14,13 +14,16 @@
 - [x] GarsonMenu: tum urun kartlari her sepet dokunusunda yeniden render oluyor (sicak mobil yol)
 - [x] Emülatör hazır değilken (ECONNREFUSED) sipariş/ödeme/kapatma route'larında 503+retry yok — veri yazımı sessizce 500'le kayboluyor
 - [x] Yedek doğrulaması yok — bozuk/eksik export sessizce 'başarılı' kabul ediliyor
+- [x] Oto-giris LAN'daki herkese SAHIP (owner) yetkisi veriyor - rol ayrimi yok
+- [x] Kasiyer panel sayfalari canli guncellenmiyor; her etkilesimde tam SSR yeniden cekim (router.refresh)
 - [x] GUNCELLEME mekanizmasi tanimsiz; kod degisince kafe PC'sinde nasil guncellenecek belirsiz
+- [x] Kasa/Adisyon ekranlari gercek zamanli degil; tum guncellemeler manuel router.refresh ile, tam sayfa SSR yeniden okuma yapiyor
 - [x] Idempotency anahtari her gonder denemesinde yeniden uretiliyor: Wi-Fi kopukken retry DUPLIKE siparis riski
 - [x] UI kisiPayi gosterimi ile route esitOdemeTutariHesapla tahsilati arasinda son-dilim tutarsizligi - hicbir tarafta test yok
 
 ## Bekleyenler (oncelik: etki -> dusuk efor -> dusuk risk)
 
-### Yuksek etki (10)
+### Yuksek etki (7)
 
 - [ ] **Setup endpoint /api/admin/rol uretimde de acik ve emulator kosuluna bagli degil - token sizarsa kim olursa sahip olabilir**  
   `security` | efor:S risk:low | src/app/api/admin/rol/route.ts:22 ; src/app/api/admin/rol/route.ts:36 ; src/app/api/admin/rol/route.ts:43  
@@ -30,10 +33,6 @@
   `ux` | efor:S risk:low | (KURULUM.md eksik - kok) ; design-reference\README.md:1 ; Questo'yu Kur.bat:30-62  
   Repo kokune KURULUM.md (saf ASCII degil, .md oldugu icin UTF-8 serbest) ekle. Icerik: (1) On-kosullar: Node.js LTS (>=20.6, --env-file destegi sart), Temurin/Adoptium JDK 21, ~2 GB bos disk, Windows 10/11. (2) Sirali kurulum: SAC'i kapat (tek-yonlu uyarisiyla) -> 'Questo'yu Kur.bat' cift tikla -> tamamlaninca 'Questo Yonetim' kisayolu. (3) Sorun-giderme tablosu: '.bat Notepad ile aciliyor'->SAC/MO
 
-- [ ] **Oto-giris LAN'daki herkese SAHIP (owner) yetkisi veriyor - rol ayrimi yok**  
-  `security` | efor:M risk:low | src/app/rol-kartlari.tsx:24 ; src/app/api/auth/oto-giris/route.ts:19 ; scripts/seed.mjs:332 ; src/lib/auth/guard.ts:63  
-  Garson rolu icin ayri, sahip:false claim'li bir hesap (or. garson@questo.local) tanimla; rol kartina gore oto-giris hangi hesapla yapilacagini secsin (oto-giris route'a rol parametresi). Alternatif/ek olarak sahip yetkisi gerektiren admin paneline ve yikici API'lere geciste basit bir PIN dogrulamasi ekle (4 haneli sahip PIN'i, sunucuda env'de tutulan hash ile). Boylece ayni Wi-Fi'daki herkes rapor
-
 - [ ] **idempotency koleksiyonu emulatorde sonsuz buyur (TTL calismaz)**  
   `resource` | efor:M risk:low | src/lib/siparis/servis.ts:308 ; src/components/kasa/garson-menu.tsx:304 ; firestore.rules:30  
   (a) Yedek/bakim scriptine periyodik temizlik ekle: emulator calisirken Admin SDK ile `idempotency` icindeki `expireAt < now` dokumanlarini batch-delete et (gunde bir kez yeter). (b) Daha iyisi: idempotency anahtarini istemcide sepet icerigi+masa hash'inden uretip kisa pencerede sabit tut; boylece cift-tik korumasi gercekten calisir ve dokuman sayisi patlamaz. (c) Yerel tek-kafe senaryosunda idempo
@@ -42,17 +41,9 @@
   `ux` | efor:M risk:low | src/app/api/adisyon/[id]/kapat/route.ts:77 ; src/app/kasa/(panel)/adisyonlar/[adisyonId]/page.tsx:308 ; src/app/kasa/(panel)/adisyonlar/[adisyonId]/kapat-btn.tsx:42 ; src/app/globals.css:411  
   Adisyon detay sayfasina yalniz kalan=0 iken gorunen bir 'Hesap Fisi' butonu ekle. Mevcut window.print() desenini (yazdir-btn.tsx) yeniden kullan: adisyon icin gizli bir .fis-belge bolgesi render et (masa adi, restoran ad/sehir, siparis kalemleri k.adet x k.ad + araToplamKurus, odeme yontemi, genel toplam, tarih-saat) ve @media print ile yalniz bu bolgeyi bas. Bulut yok; tamamen yerel window.print 
 
-- [ ] **Kasiyer panel sayfalari canli guncellenmiyor; her etkilesimde tam SSR yeniden cekim (router.refresh)**  
-  `perf-runtime` | efor:M risk:medium | src/app/kasa/(panel)/adisyonlar/page.tsx:49 ; src/app/kasa/(panel)/adisyonlar/page.tsx:8 ; src/components/kasa/odeme-talepleri.tsx:64  
-  Kasiyerin operasyonel ekranlarini (masalar + adisyonlar listesi) menu/masalar gibi onSnapshot ile canli dinlemeye cevir (kurallar zaten kasiyer okumaya izinli, firestore.rules:58-72). Bu hem otomatik canli guncelleme verir hem de gereksiz tam-SSR N+1 cekimlerini kaldirir. Mumkun degilse en azindan adisyonlar/page.tsx'teki per-adisyon siparis cekimini, adisyon dokumanindaki ozet (toplamKurus/sipari
-
 - [ ] **Mutfak bileti (kitchen ticket) otomatik basilmiyor**  
   `ux` | efor:L risk:low | src/components/kasa/garson-menu.tsx:296 ; src/app/api/kasiyer/siparis/route.ts:18 ; src/lib/siparis/servis.ts:279 ; src/app/api/siparis/[id]/durum/route.ts:15  
   Iki yerel secenek: (1) Dusuk efor: siparis onayi sonrasi garson-menu onay penceresine 'Mutfak bileti yazdir' butonu ekle; gizli .mutfak-bilet bolgesi (masa adi, gunlukNo, kalemler + secimler + notlar; FIYAT YOK) render edip @media print ile bas. (2) Daha saglam: kasiyer paneline mutfak ekrani (/kasa/mutfak) ekle, durum=yeni/hazirlaniyor siparisleri kart olarak gostersin, durum/route.ts gecisleriyl
-
-- [ ] **Kasa/Adisyon ekranlari gercek zamanli degil; tum guncellemeler manuel router.refresh ile, tam sayfa SSR yeniden okuma yapiyor**  
-  `perf-runtime` | efor:L risk:medium | src/app/kasa/(panel)/masalar/page.tsx:37 ; src/app/kasa/(panel)/adisyonlar/page.tsx:36 ; src/app/kasa/(panel)/adisyonlar/[adisyonId]/page.tsx:55  
-  En cok degisen iki ekrani (masalar listesi ve acik adisyon detayi) client-componentlere cevirip hedefli onSnapshot ekle: masalar icin `adisyonlar where(durum==acik)` ve `masalar where(aktifMi==true)` dinleyicileri; adisyon detayi icin tek adisyon dokumani + onun `siparisler`/`odemeTalepleri` alt-koleksiyonlari. Boylece kasiyer/garson ekrani otomatik guncellenir VE her etkilesimde tam SSR yeniden-r
 
 - [ ] **Kapali adisyonlar/siparisler hicbir zaman arsivlenmez/silinmez -> emulator verisi ve rapor sorgusu surekli buyur**  
   `perf-runtime` | efor:L risk:medium | src/app/api/adisyon/[id]/kapat/route.ts:68 ; src/app/admin/rapor/page.tsx:69 ; src/app/admin/rapor/page.tsx:75  
