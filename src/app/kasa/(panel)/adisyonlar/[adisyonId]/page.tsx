@@ -112,6 +112,7 @@ export default async function AdisyonDetay({
       { ad: string; adet: number; araToplamKurus: number }
     >();
     for (const s of siparisler) {
+      if (s.durum === 'iptal') continue; // iptal siparişler fişe girmesin
       for (const k of s.kalemler as SiparisKalemi[]) {
         const mevcut = m.get(k.ad);
         if (mevcut) {
