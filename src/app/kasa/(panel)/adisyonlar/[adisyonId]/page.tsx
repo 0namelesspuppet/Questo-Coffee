@@ -14,7 +14,6 @@ import { AdisyonuKapatBtn } from './kapat-btn';
 import { OdemeTalepleri } from '@/components/kasa/odeme-talepleri';
 import { KasiyerBolme } from '@/components/kasa/kasiyer-bolme';
 import { CanliYenile } from '@/components/kasa/canli-yenile';
-import { HesapFisi } from '@/components/kasa/hesap-fisi';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -54,22 +53,16 @@ export default async function AdisyonDetay({
   if (!aSnap.exists) notFound();
   const adisyon = { id: aSnap.id, ...aSnap.data() } as unknown as Adisyon;
 
-  const [masaSnap, siparisSnap, talepSnap, restoranSnap] = await Promise.all([
+  const [masaSnap, siparisSnap, talepSnap] = await Promise.all([
     db.doc(`restoranlar/${restoranId}/masalar/${adisyon.masaId}`).get(),
     aRef.collection('siparisler').orderBy('olusturulduAt', 'asc').get(),
     aRef.collection('odemeTalepleri').orderBy('olusturulduAt', 'asc').get(),
-    db.doc(`restoranlar/${restoranId}`).get(),
   ]);
 
   const masaData = masaSnap.exists
     ? (masaSnap.data() as { ad: string })
     : null;
   const masaAd = masaData?.ad ?? 'Bilinmeyen masa';
-  const restoranData = restoranSnap.exists
-    ? (restoranSnap.data() as { ad?: string; sehir?: string })
-    : null;
-  const restoranAd = restoranData?.ad ?? 'Questo';
-  const restoranSehir = restoranData?.sehir;
 
   const siparisler = siparisSnap.docs.map(
     (d) => ({ id: d.id, ...d.data() }) as unknown as Siparis,
@@ -104,31 +97,6 @@ export default async function AdisyonDetay({
     .filter((t) => t.durum === 'odendi')
     .reduce((acc, t) => acc + t.toplamKurus, 0);
   const kalanToplam = Math.max(0, (adisyon.toplamKurus as number) - odenmisToplam);
-
-  // Hesap fişi: tüm siparişlerin kalemlerini ürün adına göre topla.
-  const fisKalemleri = (() => {
-    const m = new Map<
-      string,
-      { ad: string; adet: number; araToplamKurus: number }
-    >();
-    for (const s of siparisler) {
-      if (s.durum === 'iptal') continue; // iptal siparişler fişe girmesin
-      for (const k of s.kalemler as SiparisKalemi[]) {
-        const mevcut = m.get(k.ad);
-        if (mevcut) {
-          mevcut.adet += k.adet;
-          mevcut.araToplamKurus += k.araToplamKurus as number;
-        } else {
-          m.set(k.ad, {
-            ad: k.ad,
-            adet: k.adet,
-            araToplamKurus: k.araToplamKurus as number,
-          });
-        }
-      }
-    }
-    return Array.from(m.values());
-  })();
 
   // Ürün bazlı ödeme: her kalem türünden kaç BİRİM ödendi?
   // Anahtar birim fiyat bazlı; "5× Çay"ın yalnız 2'si ödenebilsin diye birim sayar.
@@ -350,17 +318,6 @@ export default async function AdisyonDetay({
 
       {!garsonModu && (
         <OdemeTalepleri adisyonId={adisyonId} talepler={talepler} />
-      )}
-
-      {!garsonModu && fisKalemleri.length > 0 && (
-        <HesapFisi
-          restoranAd={restoranAd}
-          restoranSehir={restoranSehir}
-          masaAd={masaAd}
-          kalemler={fisKalemleri}
-          toplamKurus={adisyon.toplamKurus as number}
-          odenmisKurus={odenmisToplam}
-        />
       )}
 
       {acik && !garsonModu && (
