@@ -64,6 +64,12 @@ export function GarsonMenu({ masaId, masaAd, eklemeMi = false }: Props) {
     toplamKurus: number;
   } | null>(null);
   const satirSayaci = useRef(0);
+  // Sipariş gönderim anahtarı (idempotency): sepet oturumu başına BİR kez üretilir.
+  // Yanıt kaybolup kullanıcı tekrar denerse AYNI anahtar gider → sunucu (servis.ts)
+  // önceki sonucu döndürür, ikinci siparişi YAZMAZ. Başarılı gönderimden sonra
+  // sıfırlanır; sonraki yeni sepet taze anahtar alır.
+  // NOT: crypto.randomUUID KULLANMA — LAN/HTTP (güvensiz bağlam) telefonlarda yok.
+  const gonderimAnahtariRef = useRef<string | null>(null);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(getClientAuth(), (u) => {
@@ -296,12 +302,17 @@ export function GarsonMenu({ masaId, masaAd, eklemeMi = false }: Props) {
   const gonder = async () => {
     if (sepet.length === 0 || gonderiliyor) return;
     setGonderiliyor(true);
+    // Anahtarı await'ten ÖNCE senkron üret ki hızlı ikinci tıklama / retry aynı
+    // anahtarı kullansın (ref boşsa üret, doluysa mevcut sepet oturumunun anahtarını koru).
+    if (!gonderimAnahtariRef.current) {
+      gonderimAnahtariRef.current = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    }
     try {
       const res = await fetch('/api/kasiyer/siparis', {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
-          'idempotency-key': `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+          'idempotency-key': gonderimAnahtariRef.current,
         },
         body: JSON.stringify({
           masaId,
@@ -328,6 +339,9 @@ export function GarsonMenu({ masaId, masaAd, eklemeMi = false }: Props) {
       setOnay({ kalemler: sepet, toplamKurus: sepetTopla });
       setSepet([]);
       setSepetAcik(false);
+      // Başarılı: sonraki YENİ sepet taze anahtar alsın — aynı içerikli iki ayrı
+      // sipariş (örn. 2 çay, sonra yine 2 çay) yanlışlıkla dedupe edilmesin.
+      gonderimAnahtariRef.current = null;
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Sipariş hatası.');
     } finally {
