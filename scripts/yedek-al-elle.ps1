@@ -8,6 +8,17 @@
 $ErrorActionPreference = 'Stop'
 $ProjectId = 'demo-questo'
 
+function Test-GecerliExport {
+    param([string]$dir)
+    if (-not (Test-Path $dir)) { return $false }
+    $meta = Join-Path $dir 'firebase-export-metadata.json'
+    if (-not ((Test-Path $meta) -and ((Get-Item $meta).Length -gt 0))) { return $false }
+    $fs = Join-Path $dir 'firestore_export'
+    if (-not (Test-Path $fs)) { return $false }
+    if (-not (Get-ChildItem -Path $fs -Force -ErrorAction SilentlyContinue)) { return $false }
+    return $true
+}
+
 $Kok = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $YedekKlasor = Join-Path $Kok 'yedekler'
 if (-not (Test-Path $YedekKlasor)) {
@@ -25,8 +36,9 @@ try {
     Pop-Location
 }
 
-if (-not (Test-Path $tempDir)) {
-    Write-Host "HATA: Export başarısız oldu (emulator çalışıyor mu?)" -ForegroundColor Red
+if (-not (Test-GecerliExport $tempDir)) {
+    Write-Host "HATA: Export basarisiz/eksik (emulator calisiyor mu? veri bos mu?)" -ForegroundColor Red
+    if (Test-Path $tempDir) { Remove-Item -Recurse -Force $tempDir -ErrorAction SilentlyContinue }
     exit 1
 }
 

@@ -37,6 +37,19 @@ function Yaz-Log {
     Write-Output "[$zaman] [$seviye] $mesaj"
 }
 
+# Export GERCEKTEN veri iceriyor mu? (exit 0 olsa bile bos/yarim olabilir;
+# bunu swap etmek iyi veriyi siler.) metadata + firestore_export sart.
+function Test-GecerliExport {
+    param([string]$dir)
+    if (-not (Test-Path $dir)) { return $false }
+    $meta = Join-Path $dir 'firebase-export-metadata.json'
+    if (-not ((Test-Path $meta) -and ((Get-Item $meta).Length -gt 0))) { return $false }
+    $fs = Join-Path $dir 'firestore_export'
+    if (-not (Test-Path $fs)) { return $false }
+    if (-not (Get-ChildItem -Path $fs -Force -ErrorAction SilentlyContinue)) { return $false }
+    return $true
+}
+
 function Periyodik-Export {
     $temp = Join-Path $Kok 'emulator-veri-yeni'
     $eski = Join-Path $Kok 'emulator-veri-eski'
@@ -61,8 +74,9 @@ function Periyodik-Export {
         return $false
     }
 
-    if (-not (Test-Path $temp)) {
-        Yaz-Log "Export sonrası temp klasör yok, bekleniyor" 'WARN'
+    if (-not (Test-GecerliExport $temp)) {
+        Yaz-Log "Export eksik/bos (metadata veya firestore_export yok) - swap atlandi, mevcut veri korunuyor" 'WARN'
+        if (Test-Path $temp) { Remove-Item -Recurse -Force $temp -ErrorAction SilentlyContinue }
         return $false
     }
 
@@ -95,6 +109,23 @@ function Gunluk-Zip {
 
     try {
         Compress-Archive -Path "$VeriKlasor\*" -DestinationPath $zipYolu -Force
+
+        # Zip gercekten aciliyor ve bos degil mi? Bozuksa rotasyona GIRME
+        # (eski saglam zip'leri silme) - aksi halde tek bozuk zip tum gecmisi siler.
+        $gecerliZip = $false
+        try {
+            Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction SilentlyContinue
+            $arsiv = [System.IO.Compression.ZipFile]::OpenRead($zipYolu)
+            $gecerliZip = $arsiv.Entries.Count -gt 0
+            $arsiv.Dispose()
+        } catch {
+            # Tur yuklenemedi ya da zip bozuk -> en azindan dosya boyutuna bak
+            $gecerliZip = (Test-Path $zipYolu) -and ((Get-Item $zipYolu).Length -gt 0)
+        }
+        if (-not $gecerliZip) {
+            Yaz-Log "Zip bozuk/bos, rotasyon atlandi (eski yedekler korunuyor): $zipYolu" 'ERROR'
+            return
+        }
         Yaz-Log "Günlük zip oluştu: $zipYolu"
 
         # Rotasyon: son $ZipTutGun zip'i sakla, gerisini sil

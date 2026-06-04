@@ -22,6 +22,19 @@ $VeriKlasor = Join-Path $Kok 'emulator-veri'
 $temp = Join-Path $Kok 'emulator-veri-yeni'
 $eski = Join-Path $Kok 'emulator-veri-eski'
 
+# Export GERCEKTEN veri iceriyor mu? (exit-code 0 olsa bile bos/yarim export
+# olabilir; bunu swap etmek iyi veriyi siler.) metadata + firestore_export sart.
+function Test-GecerliExport {
+    param([string]$dir)
+    if (-not (Test-Path $dir)) { return $false }
+    $meta = Join-Path $dir 'firebase-export-metadata.json'
+    if (-not ((Test-Path $meta) -and ((Get-Item $meta).Length -gt 0))) { return $false }
+    $fs = Join-Path $dir 'firestore_export'
+    if (-not (Test-Path $fs)) { return $false }
+    if (-not (Get-ChildItem -Path $fs -Force -ErrorAction SilentlyContinue)) { return $false }
+    return $true
+}
+
 # Önceki yarım kalmış temp'i temizle
 if (Test-Path $temp) {
     Remove-Item -Recurse -Force $temp -ErrorAction SilentlyContinue
@@ -36,8 +49,8 @@ try {
     Pop-Location
 }
 
-if ($exitCode -ne 0 -or -not (Test-Path $temp)) {
-    Write-Host "  ! Export basarisiz (emulator durmus olabilir) - mevcut emulator-veri korunuyor."
+if ($exitCode -ne 0 -or -not (Test-GecerliExport $temp)) {
+    Write-Host "  ! Export basarisiz/eksik (emulator durmus ya da bos export) - mevcut emulator-veri korunuyor."
     if (Test-Path $temp) { Remove-Item -Recurse -Force $temp -ErrorAction SilentlyContinue }
     exit 1
 }
