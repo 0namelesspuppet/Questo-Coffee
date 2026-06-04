@@ -19,8 +19,12 @@ export const oturumCereziDogrula =
     const c = (await cookies()).get(COOKIE_ADI)?.value;
     if (!c) return null;
     try {
-      // ikinci parametre `checkRevoked` — yetkisi alınmış kullanıcıyı engeller
-      return await getAdminAuth().verifySessionCookie(c, true);
+      // checkRevoked=false (varsayılan): her istekte auth emülatörüne ekstra
+      // round-trip YAPMAZ → yerel POS'ta her sayfa yüklemesini hızlandırır.
+      // Trade-off: zorla iptal edilen oturum, çerez ömrü (5 gün) dolana ya da
+      // yeniden giriş yapılana kadar geçerli kalır — tek-kafe LAN güven modelinde
+      // kabul edilebilir (sunucu-taraflı token revocation akışı yok).
+      return await getAdminAuth().verifySessionCookie(c);
     } catch {
       return null;
     }
