@@ -1,22 +1,26 @@
 # Questo — Optimizasyon Backlog
 
 > 30-ajanli analiz avindan cikan, koda karsi dogrulanmis 142 bulgu. Etki/Efor/Risk ile onceliklendirildi.
-> Kaynak: ic optimizasyon avi (cok-ajanli + adversarial dogrulama). `[x]` = uygulandi.
+> `[x]` = uygulandi (Codex + Tier1 + Grup A).
 
-**Durum:** 6 uygulandi, 136 bekliyor (toplam 142).
+**Durum:** 10 uygulandi, 132 bekliyor (toplam 142).
 
 ## Uygulananlar
 
-- [x] .next her build oncesi tamamen siliniyor -> her rebuild soguk/yavas _(Codex/Tier1)_
-- [x] Idempotency anahtarı her tıkta yeniden üretiliyor — çift sipariş koruması etkisiz _(Codex/Tier1)_
-- [x] Viewport zoom kapali (maximumScale:1, kullanici yakinlastiramaz) _(Codex/Tier1)_
-- [x] esitOdemeTutariHesapla() tamamen test edilmemis - ceil/kalan/sinir kosullari korunmasiz _(Codex/Tier1)_
-- [x] Idempotency anahtari her gonder denemesinde yeniden uretiliyor: Wi-Fi kopukken retry DUPLIKE siparis riski _(Codex/Tier1)_
-- [x] UI kisiPayi gosterimi ile route esitOdemeTutariHesapla tahsilati arasinda son-dilim tutarsizligi - hicbir tarafta test yok _(Codex/Tier1)_
+- [x] .next her build oncesi tamamen siliniyor -> her rebuild soguk/yavas
+- [x] Idempotency anahtarı her tıkta yeniden üretiliyor — çift sipariş koruması etkisiz
+- [x] Viewport zoom kapali (maximumScale:1, kullanici yakinlastiramaz)
+- [x] esitOdemeTutariHesapla() tamamen test edilmemis - ceil/kalan/sinir kosullari korunmasiz
+- [x] GarsonMenu: tum urun kartlari her sepet dokunusunda yeniden render oluyor (sicak mobil yol)
+- [x] Emülatör hazır değilken (ECONNREFUSED) sipariş/ödeme/kapatma route'larında 503+retry yok — veri yazımı sessizce 500'le kayboluyor
+- [x] Yedek doğrulaması yok — bozuk/eksik export sessizce 'başarılı' kabul ediliyor
+- [x] GUNCELLEME mekanizmasi tanimsiz; kod degisince kafe PC'sinde nasil guncellenecek belirsiz
+- [x] Idempotency anahtari her gonder denemesinde yeniden uretiliyor: Wi-Fi kopukken retry DUPLIKE siparis riski
+- [x] UI kisiPayi gosterimi ile route esitOdemeTutariHesapla tahsilati arasinda son-dilim tutarsizligi - hicbir tarafta test yok
 
-## Bekleyenler (oncelik sirasi: etki -> dusuk efor -> dusuk risk)
+## Bekleyenler (oncelik: etki -> dusuk efor -> dusuk risk)
 
-### Yuksek etki (14)
+### Yuksek etki (10)
 
 - [ ] **Setup endpoint /api/admin/rol uretimde de acik ve emulator kosuluna bagli degil - token sizarsa kim olursa sahip olabilir**  
   `security` | efor:S risk:low | src/app/api/admin/rol/route.ts:22 ; src/app/api/admin/rol/route.ts:36 ; src/app/api/admin/rol/route.ts:43  
@@ -25,18 +29,6 @@
 - [ ] **Uygulama icin insan-okur KURULUM/README belgesi yok**  
   `ux` | efor:S risk:low | (KURULUM.md eksik - kok) ; design-reference\README.md:1 ; Questo'yu Kur.bat:30-62  
   Repo kokune KURULUM.md (saf ASCII degil, .md oldugu icin UTF-8 serbest) ekle. Icerik: (1) On-kosullar: Node.js LTS (>=20.6, --env-file destegi sart), Temurin/Adoptium JDK 21, ~2 GB bos disk, Windows 10/11. (2) Sirali kurulum: SAC'i kapat (tek-yonlu uyarisiyla) -> 'Questo'yu Kur.bat' cift tikla -> tamamlaninca 'Questo Yonetim' kisayolu. (3) Sorun-giderme tablosu: '.bat Notepad ile aciliyor'->SAC/MO
-
-- [ ] **GarsonMenu: tum urun kartlari her sepet dokunusunda yeniden render oluyor (sicak mobil yol)**  
-  `perf-runtime` | efor:M risk:low | src/components/kasa/garson-menu.tsx:201 ; src/components/kasa/garson-menu.tsx:677 ; src/components/kasa/garson-menu.tsx:526  
-  1) UrunListesi'ni React.memo ile sarmalla. 2) urunAdedi yerine sepetten turetilmis bir Map<urunId, adet> hesapla (useMemo([sepet])) ve UrunListesi'ne bu map'i ver; tekil kart icinde adet = map.get(u.id) ?? 0. 3) urunEkle/urunCikar fonksiyonlarini useCallback'e al (setSepet fonksiyonel guncelleme kullandigi icin bagimlilik bos olabilir). 4) Tek kart 'UrunKarti' alt bilesenine cikarilip React.memo e
-
-- [ ] **Emülatör hazır değilken (ECONNREFUSED) sipariş/ödeme/kapatma route'larında 503+retry yok — veri yazımı sessizce 500'le kayboluyor**  
-  `reliability` | efor:M risk:low | src/lib/utils/hata.ts:42 ; src/app/api/kasiyer/siparis/route.ts:18 ; src/app/api/adisyon/[id]/kasiyer-talep/route.ts:91 ; src/components/kasa/garson-menu.tsx:300  
-  httpHata'da generic 500 dalına girmeden önce baglantiReddiHatasi(e) ise 503 dön (yardımcı zaten var). İstemci fetch wrapper'larına (garson-menu gonder, kasiyer-bolme talep, kapat) 503'te kısa aralıklı birkaç retry ekle. En azından 503'te 'Sistem hazırlanıyor, tekrar deneyin' net mesajı göster.
-
-- [ ] **Yedek doğrulaması yok — bozuk/eksik export sessizce 'başarılı' kabul ediliyor**  
-  `reliability` | efor:M risk:low | scripts/kapanis-yedek.ps1:39 ; scripts/kapanis-yedek.ps1:46 ; scripts/yedek-periodic.ps1:58 ; scripts/yedek-periodic.ps1:97 ; scripts/yedek-al-elle.ps1:28  
-  Swap öncesi temp export'u doğrula: firebase-export-metadata.json var ve >0 byte mı (emulator-baslat.ps1:18 deseninin aynısı), firestore_export alt klasörü var mı. Geçmezse swap'i iptal et, mevcut emulator-veri'yi koru. Zip sonrası [System.IO.Compression.ZipFile]::OpenRead ile arşivin açılabildiğini ve boş olmadığını teyit et; başarısızsa WARN logla, eski zip'i silme.
 
 - [ ] **Oto-giris LAN'daki herkese SAHIP (owner) yetkisi veriyor - rol ayrimi yok**  
   `security` | efor:M risk:low | src/app/rol-kartlari.tsx:24 ; src/app/api/auth/oto-giris/route.ts:19 ; scripts/seed.mjs:332 ; src/lib/auth/guard.ts:63  
@@ -53,10 +45,6 @@
 - [ ] **Kasiyer panel sayfalari canli guncellenmiyor; her etkilesimde tam SSR yeniden cekim (router.refresh)**  
   `perf-runtime` | efor:M risk:medium | src/app/kasa/(panel)/adisyonlar/page.tsx:49 ; src/app/kasa/(panel)/adisyonlar/page.tsx:8 ; src/components/kasa/odeme-talepleri.tsx:64  
   Kasiyerin operasyonel ekranlarini (masalar + adisyonlar listesi) menu/masalar gibi onSnapshot ile canli dinlemeye cevir (kurallar zaten kasiyer okumaya izinli, firestore.rules:58-72). Bu hem otomatik canli guncelleme verir hem de gereksiz tam-SSR N+1 cekimlerini kaldirir. Mumkun degilse en azindan adisyonlar/page.tsx'teki per-adisyon siparis cekimini, adisyon dokumanindaki ozet (toplamKurus/sipari
-
-- [ ] **GUNCELLEME mekanizmasi tanimsiz; kod degisince kafe PC'sinde nasil guncellenecek belirsiz**  
-  `reliability` | efor:M risk:medium | (GUNCELLEME.md / Guncelle.bat eksik) ; scripts\uygulama-baslat.ps1:20 ; package.json:3  
-  Iki secenek: (A) git pull tabanli 'Questo'yu Guncelle.bat' (ASCII): git stash (yerel .env korunur, zaten gitignore) -> git pull -> npm install (lock degistiyse) -> npm run build -> kisayol/gorev yenile. Daha guvenilir ve atomik. (B) Elle kopyalamada kalinacaksa, MEMORY listesini repoya GUNCELLEME.md olarak tasiyip surumlemek yerine, en azindan package.json version alanini (su an sabit 0.1.0) her s
 
 - [ ] **Mutfak bileti (kitchen ticket) otomatik basilmiyor**  
   `ux` | efor:L risk:low | src/components/kasa/garson-menu.tsx:296 ; src/app/api/kasiyer/siparis/route.ts:18 ; src/lib/siparis/servis.ts:279 ; src/app/api/siparis/[id]/durum/route.ts:15  
