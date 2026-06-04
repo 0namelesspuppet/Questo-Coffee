@@ -1,9 +1,9 @@
 # Questo — Optimizasyon Backlog
 
 > 30-ajanli analiz avindan cikan, koda karsi dogrulanmis 142 bulgu. Etki/Efor/Risk ile onceliklendirildi.
-> `[x]` = uygulandi (Codex + Tier1 + Grup A + Grup B).
+> `[x]` = uygulandi (Codex + Tier1 + Grup A + Grup B + Faz 1).
 
-**Durum:** 13 uygulandi, 129 bekliyor (toplam 142).
+**Durum:** 21 uygulandi, 121 bekliyor (toplam 142).
 
 ## Uygulananlar
 
@@ -18,8 +18,16 @@
 - [x] Kasiyer panel sayfalari canli guncellenmiyor; her etkilesimde tam SSR yeniden cekim (router.refresh)
 - [x] GUNCELLEME mekanizmasi tanimsiz; kod degisince kafe PC'sinde nasil guncellenecek belirsiz
 - [x] Kasa/Adisyon ekranlari gercek zamanli degil; tum guncellemeler manuel router.refresh ile, tam sayfa SSR yeniden okuma yapiyor
+- [x] Emülatör UI (port 4000) tek-kafe POS'ta gereksiz; ekstra Node process + RAM/CPU yiyor
+- [x] Emülatör UI '0.0.0.0'a bagli — admin arayuzu tum LAN'a aciliyor (guvenlik)
+- [x] Kullanilmayan 3 bagimlilik: react-hook-form, @hookform/resolvers, class-variance-authority
+- [x] firebase-admin icin serverExternalPackages tanimlanmamis (build yavasliyor)
 - [x] Idempotency anahtari her gonder denemesinde yeniden uretiliyor: Wi-Fi kopukken retry DUPLIKE siparis riski
 - [x] UI kisiPayi gosterimi ile route esitOdemeTutariHesapla tahsilati arasinda son-dilim tutarsizligi - hicbir tarafta test yok
+- [x] firebase.json'da kullanilmayan functions+ui emülatorleri ve functions config parse maliyeti
+- [x] optimizePackageImports'ta etkisiz/yanlis girisler (zod, firebase/app, firebase/auth)
+- [x] firebase-debug.log ve firestore-debug.log temizlenmiyor, her acilista buyur
+- [x] firebase.json'da functions(5001) ve UI(4000) emulatorleri tanimli ama baslatilmiyor — kafa karistirici/portlar bos tutuluyor
 
 ## Bekleyenler (oncelik: etki -> dusuk efor -> dusuk risk)
 
@@ -53,19 +61,11 @@
   `reliability` | efor:L risk:medium | src/app/api/adisyon/[id]/kasiyer-talep/route.ts:42-87 ; src/app/api/adisyon/[id]/kapat/route.ts:35-80 ; src/app/api/adisyon/[id]/odeme-talebi/[talepId]/onayla/route.ts:30-43 ; vitest.config.ts:1-14 ; src/lib/firebase/admin.ts:45-54  
   Emulator-tabanli ayri bir vitest projesi/dosya grubu kur (orn. tests/integration/*.itest.ts, ayri include + setupFiles ile FIRESTORE_EMULATOR_HOST='127.0.0.1:8080' ve FIREBASE_AUTH_EMULATOR_HOST set). Maliyet: testler emulator calisiyorken kosmali (CI/local'de 'npm run emulators' on-kosulu) - bu yuzden ana 'vitest' (saf birim) suit'inden AYIR (orn. test:int script). Auth guard apiKasiyer'i atlamak
 
-### Orta etki (50)
+### Orta etki (46)
 
 - [ ] **Seed her acilista tam Node + firebase-admin prosesi spawn ediyor (idempotent atlasada)**  
   `perf-startup` | efor:S risk:low | Questo'yu Başlat.bat:93-96 ; scripts/seed.mjs:233-249  
   Seed'i kosula bagla: emulator-veri/ icinde gecerli export VARSA (firebase-export-metadata.json) seed'i hic spawn etme - veri zaten geri yuklenecek. Sadece emulator-veri yok/bos oldugunda (ilk kurulum) seed'i calistir. Bu kontrol baslat.bat icinde tek bir 'if exist' ile yapilabilir; tam Node prosesi spawn'i tamamen onlenir.
-
-- [ ] **Emülatör UI (port 4000) tek-kafe POS'ta gereksiz; ekstra Node process + RAM/CPU yiyor**  
-  `resource` | efor:S risk:low | firebase.json:18 ; scripts\emulator-baslat.ps1:22 ; package.json:14  
-  firebase.json:18'de 'ui': { 'enabled': false } yapin. emulators:start (emulator-baslat.ps1:22) --only auth,firestore kullansa da UI ayri bir port-4000 Node sunucusu olarak baslar; kapatilinca o process hic baslamaz, RAM/CPU ve acilis suresi dusler. Kapatildiktan SONRA package.json:14 kill-ports listesinden 4000'i sadelestirin (Hub 4400 emulators:start ile yine acilabilir, once dogrulayin). Gelisti
-
-- [ ] **Emülatör UI '0.0.0.0'a bagli — admin arayuzu tum LAN'a aciliyor (guvenlik)**  
-  `security` | efor:S risk:low | firebase.json:18 ; src\lib\firebase\client.ts:70  
-  UI'yi tamamen kapatmiyorsaniz (ust bulgu, tercih edilen), en azindan firebase.json:18'de UI host'unu '127.0.0.1' yapin; boylece UI yalnizca PC'den erisilebilir, auth(9099)/firestore(8080) 0.0.0.0'da kalip telefonlara hizmet vermeye devam eder. Tercih: ui.enabled=false.
 
 - [ ] **menu-yonetimi.tsx onSnapshot auth hazir olmadan kuruluyor; permission hatasi/yeniden kurulum riski**  
   `reliability` | efor:S risk:low | src/app/admin/menu/menu-yonetimi.tsx:69  
@@ -75,17 +75,9 @@
   `perf-runtime` | efor:S risk:low | src/components/kasa/kasiyer-bolme.tsx:61 ; src/components/kasa/kasiyer-bolme.tsx:81 ; src/components/kasa/kasiyer-bolme.tsx:147  
   tumKalemler'i useMemo([siparisler]) ile hesapla ve bir Map<key, item> (useMemo) olustur; seciliToplam ve urunOde icinde find yerine map.get(key) kullan (O(1)). seciliAdetToplam/seciliToplam'i useMemo([seciliAdet, kalemMap]) ile, aktifSiparisler'i useMemo([siparisler]) ile hesapla.
 
-- [ ] **Kullanilmayan 3 bagimlilik: react-hook-form, @hookform/resolvers, class-variance-authority**  
-  `build` | efor:S risk:low | package.json:19 ; package.json:20 ; package.json:28 ; next.config.ts:27 ; next.config.ts:28  
-  Uc paketi de package.json dependencies'ten kaldir: npm uninstall react-hook-form @hookform/resolvers class-variance-authority. Ayni anda next.config.ts:27-28 satirlarindaki '@hookform/resolvers' ve 'react-hook-form' optimizePackageImports girislerini sil.
-
 - [ ] **firebase/app-check client bundle'a giriyor ama emulator modunda hic calismaz**  
   `perf-startup` | efor:S risk:low | src/lib/firebase/client.ts:22 ; src/lib/firebase/client.ts:48 ; src/lib/firebase/client.ts:52  
   App-check'i kosullu/lazy yap: top-level importu kaldir, baslat() icinde yalnizca !emulatorAcik && siteKey dogru iken `const { initializeAppCheck, ReCaptchaV3Provider } = await import('firebase/app-check')` ile dinamik import et. Veya yerel-kalici karar verildiyse (LAN'da recaptcha anlamsiz) app-check kodunu tamamen kaldir. Boylece modul client bundle'dan tamamen cikar.
-
-- [ ] **firebase-admin icin serverExternalPackages tanimlanmamis (build yavasliyor)**  
-  `build` | efor:S risk:low | next.config.ts:18 ; next.config.ts:33  
-  next.config.ts'ye top-level `serverExternalPackages: ['firebase-admin']` ekle. Bu firebase-admin + gecisli grpc bagimliliklarini node_modules'tan require eder; mevcut webpack.externals blogu (satir 33-42) buyuk olcude gereksizlesir (grpc zaten firebase-admin altinda). Build hizlanir, hata yuzeyi azalir. Not: middleware.ts firebase-admin import ediyorsa Edge runtime ile catismayi dogrula (su an nod
 
 - [ ] **rapor-sifirla batch'leri atomik değil — kısmi başarısızlıkta yarım sıfırlanmış rapor**  
   `reliability` | efor:S risk:low | src/app/api/admin/rapor-sifirla/route.ts:69 ; src/app/api/admin/rapor-sifirla/route.ts:80  
@@ -255,7 +247,7 @@
   `perf-runtime` | efor:L risk:medium | src/app/admin/rapor/page.tsx:69 ; src/app/api/admin/rapor-sifirla/route.ts:57  
   Tek-kiraci oldugu icin gunluk ozet (rollup) dokumani yazmak (siparis yazimi sirasinda gunluk ciro/sayac dokumanina kategori/saat kirilimi eklemek) raporu O(1) okuma yapar. Minimum mudahale: kapali-veri purge (bulgu #2) bu sorgunun buyumesini de sinirlar.
 
-### Dusuk etki (72)
+### Dusuk etki (68)
 
 - [ ] **Build tetikleyicisinde .env.local var; baslat.bat onu her ilk kurulumda 'dokunuyor'**  
   `perf-startup` | efor:S risk:low | scripts/uygulama-baslat.ps1:26-31 ; Questo'yu Başlat.bat:17-22  
@@ -264,10 +256,6 @@
 - [ ] **Next.js telemetry kapali degil — build+start'a I/O ve agir-baslangic ekliyor**  
   `perf-startup` | efor:S risk:low | package.json:5-17 ; scripts/uygulama-baslat.ps1:13-15  
   package.json 'build' ve 'start' script'lerinde (ya da uygulama-baslat.ps1 basinda) $env:NEXT_TELEMETRY_DISABLED='1' set et. Sifir risk, kucuk-ama-bedava kazanc; diske gereksiz yazimi keser. Olculebilir hiz kazanci beklenmesin.
-
-- [ ] **firebase.json'da kullanilmayan functions+ui emülatorleri ve functions config parse maliyeti**  
-  `build` | efor:S risk:low | firebase.json:6-20 ; scripts/emulator-baslat.ps1:22  
-  Yerel POS kullanimi icin firebase.json'dan 'functions' blogunu ve 'emulators.functions' + 'emulators.ui'yi (en az ui:enabled:false) kaldir/kapat. Boylece CLI parse yuzeyi sadelesir, UI portu (4000) bosa ayrilmaz ve kill-ports listesinden 4000/5001 duser. Not: functions/ klasoru kaynak iceriyor (src/index.ts, lib) ama node_modules yuklu degil; tamamen kaldirmak yerine emulator config'ten dislamak y
 
 - [ ] **Acilista emülator hazir-bekleme adimi seri ve 3000 beklemesinden sonra ayrica yapiliyor**  
   `perf-startup` | efor:S risk:low | Questo'yu Başlat.bat:73-91  
@@ -340,10 +328,6 @@
 - [ ] **MasaYonetimi: onAuthStateChanged icinde getIdToken(true) zorunlu token yenileme — gereksiz gecikme/istek**  
   `perf-startup` | efor:S risk:low | src/app/admin/masalar/masa-yonetimi.tsx:26  
   getIdToken(true) cagrisini kaldir; onAuthStateChanged zaten gecerli kullaniciyi verir (diger shell'lerle tutarli hale gelir). Custom claim tazeligi gerekirse yalniz claim degistiren islemden sonra hedefli yenile. authHazir bekleme suresini kisaltir.
-
-- [ ] **optimizePackageImports'ta etkisiz/yanlis girisler (zod, firebase/app, firebase/auth)**  
-  `build` | efor:S risk:low | next.config.ts:24 ; next.config.ts:25 ; next.config.ts:26 ; next.config.ts:27 ; next.config.ts:28 ; next.config.ts:29  
-  optimizePackageImports'i gercekten fayda saglayan client barrel paketlerle sinirla: 'lucide-react', 'sonner', 'firebase/firestore' kalsin. 'zod', 'firebase/app', 'firebase/auth', 'react-hook-form', '@hookform/resolvers' girislerini cikar.
 
 - [ ] **Build sirasinda ESLint calisiyor — production build'i yavaslatiyor**  
   `build` | efor:S risk:low | next.config.ts:8 ; package.json:10  
@@ -428,14 +412,6 @@
 - [ ] **emulator-veri-eski klasoru her export'ta yenilenip kalici olarak birakiliyor (veri 2x disk)**  
   `resource` | efor:S risk:low | scripts/yedek-periodic.ps1:72 ; scripts/kapanis-yedek.ps1:48  
   Atomik swap'in amaci yalniz yarim export'a karsi korunmak; basarili swap'tan SONRA `emulator-veri-eski`'yi silmek (veya bir sonraki dongude basinda silmek) guvenli. Swap basariliysa eskiyi Remove-Item ile temizle. `emulator-veri-yedek-demo1` elle silinebilir (gitignore'da zaten). Zip rotasyonu (yedekler/) zaten 30 gun tutuyor; ek bir tam kopyaya gerek yok.
-
-- [ ] **firebase-debug.log ve firestore-debug.log temizlenmiyor, her acilista buyur**  
-  `resource` | efor:S risk:low | Questo'yu Başlat.bat:54  
-  Baslat.bat'in log temizleme dongusune (satir 54) `firebase-debug.log` ve `firestore-debug.log` (root) dosyalarini da ekle, ya da Durdur/Baslat'ta bunlari sil. Saf ASCII oldugu icin .bat kisiti sorun degil.
-
-- [ ] **firebase.json'da functions(5001) ve UI(4000) emulatorleri tanimli ama baslatilmiyor — kafa karistirici/portlar bos tutuluyor**  
-  `build` | efor:S risk:low | firebase.json:14 ; scripts/emulator-baslat.ps1:22  
-  firebase.json'dan kullanilmayan `functions` ve `ui` emulator bloklarini kaldir (ya da ui.enabled:false). Boylece konfigurasyon gercek calistirilanla (auth+firestore) tutarli olur. NOT: Storage emulatoru kaldirma baska arac kapsaminda — buna dokunma; bu bulgu functions+ui icin.
 
 - [ ] **Firestore persistentLocalCache (IndexedDB) tarayicida sinirsiz buyuyebilir; uzun acik kalan kasiyer sekmesinde bellek/disk artisi**  
   `resource` | efor:S risk:low | src/lib/firebase/client.ts:91  
