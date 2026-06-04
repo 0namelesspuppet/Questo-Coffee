@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Check, Minus, Plus, Search, Trash2, X } from 'lucide-react';
 import {
@@ -15,6 +15,7 @@ import { getClientAuth, getClientDb } from '@/lib/firebase/client';
 import { kategoriConverter, urunConverter } from '@/lib/firebase/converters';
 import type { Kategori, Urun, UrunOpsiyonGrubu } from '@/types/model';
 import { formatTL } from '@/lib/utils/para';
+import { postYinele } from '@/lib/utils/api-istek';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -201,17 +202,17 @@ export function GarsonMenu({ masaId, masaAd, eklemeMi = false }: Props) {
   }, [aktifKategoriId]);
 
 
-  const opsiyonluMu = (u: Urun) => (u.opsiyonGruplari?.length ?? 0) > 0;
-
-  // Ürünün sepetteki toplam adedi (opsiyonlu varyantlar dahil)
-  const urunAdedi = (urunId: string) =>
-    sepet
-      .filter((k) => k.urunId === urunId)
-      .reduce((acc, k) => acc + k.adet, 0);
+  // Sepetteki ürün adetleri: tek Map'te topla (her kartta filter+reduce yerine
+  // O(1) lookup). Yalnızca sepet değişince yeniden hesaplanır.
+  const adetMap = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const k of sepet) m.set(k.urunId, (m.get(k.urunId) ?? 0) + k.adet);
+    return m;
+  }, [sepet]);
 
   // Ürünün sepetten bir adet düşürür: önce opsiyonsuz satır, yoksa en son
   // eklenen opsiyonlu varyant. 0'a inen satır tamamen kaldırılır.
-  const urunCikar = (urun: Urun) => {
+  const urunCikar = useCallback((urun: Urun) => {
     setSepet((s) => {
       const opsiyonsuz = s.find((k) => k.urunId === urun.id && !k.secimler);
       if (opsiyonsuz) {
@@ -236,10 +237,12 @@ export function GarsonMenu({ masaId, masaAd, eklemeMi = false }: Props) {
       }
       return s.map((k, i) => (i === lastIdx ? { ...k, adet: k.adet - 1 } : k));
     });
-  };
+  }, []);
 
-  const urunEkle = (urun: Urun) => {
-    if (opsiyonluMu(urun)) {
+  const urunEkle = useCallback((urun: Urun) => {
+    // Opsiyonlu ürün → seçim modalını aç (inline kontrol; harici fonksiyona
+    // bağımlı olmadığı için useCallback bağımlılıkları boş kalabilir).
+    if ((urun.opsiyonGruplari?.length ?? 0) > 0) {
       setOpsiyonUrun(urun);
       return;
     }
@@ -263,7 +266,7 @@ export function GarsonMenu({ masaId, masaAd, eklemeMi = false }: Props) {
         },
       ];
     });
-  };
+  }, []);
 
   const adetGuncelle = (satirId: string, yeni: number) => {
     setSepet((s) =>
@@ -308,30 +311,28 @@ export function GarsonMenu({ masaId, masaAd, eklemeMi = false }: Props) {
       gonderimAnahtariRef.current = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     }
     try {
-      const res = await fetch('/api/kasiyer/siparis', {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          'idempotency-key': gonderimAnahtariRef.current,
-        },
-        body: JSON.stringify({
-          masaId,
-          kalemler: sepet.map((k) => ({
-            urunId: k.urunId,
-            adet: k.adet,
-            ...(k.secimler && k.secimler.length > 0
-              ? {
-                  secimler: k.secimler.map((s) => ({
-                    grupId: s.grupId,
-                    secenekIds: s.secenekler.map((sc) => sc.id),
-                  })),
-                }
-              : {}),
-          })),
-        }),
+      const govde = JSON.stringify({
+        masaId,
+        kalemler: sepet.map((k) => ({
+          urunId: k.urunId,
+          adet: k.adet,
+          ...(k.secimler && k.secimler.length > 0
+            ? {
+                secimler: k.secimler.map((s) => ({
+                  grupId: s.grupId,
+                  secenekIds: s.secenekler.map((sc) => sc.id),
+                })),
+              }
+            : {}),
+        })),
       });
-      const j = (await res.json()) as { ok?: boolean; mesaj?: string; adisyonId?: string };
-      if (!res.ok || !j.ok || !j.adisyonId) {
+      // 503 (emülatör açılışta) / geçici ağ hatasında kısa aralıklarla tekrar dener.
+      // Anahtar sabit olduğu için tekrar güvenli — sunucu çift siparişi önler.
+      const { ok, data } = await postYinele('/api/kasiyer/siparis', govde, {
+        idempotencyKey: gonderimAnahtariRef.current,
+      });
+      const j = data as { ok?: boolean; mesaj?: string; adisyonId?: string };
+      if (!ok || !j.ok || !j.adisyonId) {
         throw new Error(j.mesaj ?? 'Sipariş gönderilemedi.');
       }
       // Onay penceresini aç: ne sipariş edildiğini göster. "Tamam" deyince
@@ -515,7 +516,7 @@ export function GarsonMenu({ masaId, masaAd, eklemeMi = false }: Props) {
         {aramaAktif ? (
           <UrunListesi
             urunler={aramaSonuc}
-            urunAdedi={urunAdedi}
+            adetMap={adetMap}
             urunEkle={urunEkle}
             urunCikar={urunCikar}
             bosMesaj="Eşleşen ürün yok."
@@ -539,7 +540,7 @@ export function GarsonMenu({ masaId, masaAd, eklemeMi = false }: Props) {
                   </h2>
                   <UrunListesi
                     urunler={lst}
-                    urunAdedi={urunAdedi}
+                    adetMap={adetMap}
                     urunEkle={urunEkle}
                     urunCikar={urunCikar}
                     bosMesaj=""
@@ -688,15 +689,15 @@ export function GarsonMenu({ masaId, masaAd, eklemeMi = false }: Props) {
   );
 }
 
-function UrunListesi({
+const UrunListesi = memo(function UrunListesi({
   urunler,
-  urunAdedi,
+  adetMap,
   urunEkle,
   urunCikar,
   bosMesaj,
 }: {
   urunler: Urun[];
-  urunAdedi: (id: string) => number;
+  adetMap: Map<string, number>;
   urunEkle: (u: Urun) => void;
   urunCikar: (u: Urun) => void;
   bosMesaj: string;
@@ -710,77 +711,99 @@ function UrunListesi({
   }
   return (
     <ul className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-3 xl:grid-cols-4">
-      {urunler.map((u) => {
-        const adet = urunAdedi(u.id);
-        return (
-          <li key={u.id}>
-            <div
-              role="button"
-              tabIndex={0}
-              onClick={() => urunEkle(u)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  urunEkle(u);
-                }
-              }}
-              className="relative flex h-full min-h-[6.5rem] w-full cursor-pointer flex-col justify-between gap-2 rounded-xl border bg-card p-3 text-left shadow-soft transition active:bg-secondary/40 sm:min-h-[9rem] sm:gap-3 sm:p-4"
-              aria-label={`${u.ad} ekle`}
-            >
-              <span className="block text-sm font-semibold leading-snug line-clamp-2 sm:text-base sm:line-clamp-3">
-                {u.ad}
-              </span>
-              <div className="flex items-end justify-between gap-2">
-                <span className="text-sm font-medium tabular-nums text-foreground sm:text-base">
-                  {formatTL(u.fiyatKurus)}
-                </span>
-                {adet === 0 ? (
-                  <span
-                    aria-hidden="true"
-                    className="inline-flex h-10 min-w-10 shrink-0 items-center justify-center rounded-full bg-primary px-2 text-primary-foreground shadow-soft sm:h-11 sm:min-w-11"
-                  >
-                    <Plus className="size-5" strokeWidth={3} />
-                  </span>
-                ) : (
-                  <div
-                    className="inline-flex h-10 shrink-0 items-center rounded-full bg-primary text-primary-foreground shadow-soft sm:h-11"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        urunCikar(u);
-                      }}
-                      className="flex h-10 w-10 items-center justify-center rounded-l-full active:bg-primary/80 sm:h-11 sm:w-11"
-                      aria-label={`${u.ad} azalt`}
-                    >
-                      <Minus className="size-5" strokeWidth={3} />
-                    </button>
-                    <span className="min-w-6 text-center text-sm font-bold tabular-nums">
-                      {adet}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        urunEkle(u);
-                      }}
-                      className="flex h-10 w-10 items-center justify-center rounded-r-full active:bg-primary/80 sm:h-11 sm:w-11"
-                      aria-label={`${u.ad} ekle`}
-                    >
-                      <Plus className="size-5" strokeWidth={3} />
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </li>
-        );
-      })}
+      {urunler.map((u) => (
+        <li key={u.id}>
+          <UrunKarti
+            urun={u}
+            adet={adetMap.get(u.id) ?? 0}
+            onEkle={urunEkle}
+            onCikar={urunCikar}
+          />
+        </li>
+      ))}
     </ul>
   );
-}
+});
+
+// Tek ürün kartı — memo'lu: yalnızca kendi adedi (ya da ürünü/handler'ı) değişince
+// yeniden render olur. Böylece sepete tek ürün eklenince TÜM kartlar değil sadece
+// ilgili kart güncellenir (dokunmatik akıcılık). onEkle/onCikar çağıran tarafta
+// useCallback ile sabit; adet primitif sayı → React.memo sığ karşılaştırması yeter.
+const UrunKarti = memo(function UrunKarti({
+  urun: u,
+  adet,
+  onEkle,
+  onCikar,
+}: {
+  urun: Urun;
+  adet: number;
+  onEkle: (u: Urun) => void;
+  onCikar: (u: Urun) => void;
+}) {
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => onEkle(u)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onEkle(u);
+        }
+      }}
+      className="relative flex h-full min-h-[6.5rem] w-full cursor-pointer flex-col justify-between gap-2 rounded-xl border bg-card p-3 text-left shadow-soft transition active:bg-secondary/40 sm:min-h-[9rem] sm:gap-3 sm:p-4"
+      aria-label={`${u.ad} ekle`}
+    >
+      <span className="block text-sm font-semibold leading-snug line-clamp-2 sm:text-base sm:line-clamp-3">
+        {u.ad}
+      </span>
+      <div className="flex items-end justify-between gap-2">
+        <span className="text-sm font-medium tabular-nums text-foreground sm:text-base">
+          {formatTL(u.fiyatKurus)}
+        </span>
+        {adet === 0 ? (
+          <span
+            aria-hidden="true"
+            className="inline-flex h-10 min-w-10 shrink-0 items-center justify-center rounded-full bg-primary px-2 text-primary-foreground shadow-soft sm:h-11 sm:min-w-11"
+          >
+            <Plus className="size-5" strokeWidth={3} />
+          </span>
+        ) : (
+          <div
+            className="inline-flex h-10 shrink-0 items-center rounded-full bg-primary text-primary-foreground shadow-soft sm:h-11"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onCikar(u);
+              }}
+              className="flex h-10 w-10 items-center justify-center rounded-l-full active:bg-primary/80 sm:h-11 sm:w-11"
+              aria-label={`${u.ad} azalt`}
+            >
+              <Minus className="size-5" strokeWidth={3} />
+            </button>
+            <span className="min-w-6 text-center text-sm font-bold tabular-nums">
+              {adet}
+            </span>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEkle(u);
+              }}
+              className="flex h-10 w-10 items-center justify-center rounded-r-full active:bg-primary/80 sm:h-11 sm:w-11"
+              aria-label={`${u.ad} ekle`}
+            >
+              <Plus className="size-5" strokeWidth={3} />
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+});
 
 function OpsiyonSecici({
   urun,
