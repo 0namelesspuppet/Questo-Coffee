@@ -1,9 +1,9 @@
 # Questo — Optimizasyon Backlog
 
-> 30-ajanli analiz avindan cikan, koda karsi dogrulanmis 142 bulgu. Etki/Efor/Risk ile onceliklendirildi.
-> `[x]` = uygulandi (Codex + Tier1 + Grup A + Grup B + Faz 1).
+> 30-ajanli analiz avindan cikan, koda karsi dogrulanmis 142 bulgu.
+> `[x]` = uygulandi (Codex + Tier1 + Grup A + Grup B + Faz 1 + Faz 2).
 
-**Durum:** 21 uygulandi, 121 bekliyor (toplam 142).
+**Durum:** 29 uygulandi, 113 bekliyor (toplam 142).
 
 ## Uygulananlar
 
@@ -23,9 +23,17 @@
 - [x] Kullanilmayan 3 bagimlilik: react-hook-form, @hookform/resolvers, class-variance-authority
 - [x] firebase-admin icin serverExternalPackages tanimlanmamis (build yavasliyor)
 - [x] Idempotency anahtari her gonder denemesinde yeniden uretiliyor: Wi-Fi kopukken retry DUPLIKE siparis riski
+- [x] Eşzamanlı ödeme talepleri transaction dışında — aşırı ödeme / kalan-altı yarış koşulu
+- [x] odenmisTutarKurus() icin saf reduce cekirdegi ayiklanip test edilemiyor (Firestore'a gomulu)
 - [x] UI kisiPayi gosterimi ile route esitOdemeTutariHesapla tahsilati arasinda son-dilim tutarsizligi - hicbir tarafta test yok
+- [x] kasiyer-talep: odeme yazimi transaction disinda - esZamanli iki odeme adisyon toplamini asabilir (cift tahsilat)
+- [x] odeme-talebi onayla: bekleyen musteri talebini kalan tutar dogrulamadan 'odendi' yapar - asiri odeme/cift dusme
 - [x] firebase.json'da kullanilmayan functions+ui emülatorleri ve functions config parse maliyeti
 - [x] optimizePackageImports'ta etkisiz/yanlis girisler (zod, firebase/app, firebase/auth)
+- [x] Ödeme onaylama route'u transaction'sız ve aşırı-ödeme guard'ı yok
+- [x] Stok geri alımında stoktaMi:true koşulsuz set ediliyor — manuel 'satışa kapat' kararını eziyor
+- [x] esit yontemi: tabanKurus=0/toplamKurus<=0 olsa bile talep yazilir - sahte 'odendi' kayitlari, kalan kapanmaz
+- [x] odeme-talebi/onayla route'u olu kod - hicbir akis 'bekliyor' durumu uretmiyor (yetki yuzeyi gereksiz acik)
 - [x] firebase-debug.log ve firestore-debug.log temizlenmiyor, her acilista buyur
 - [x] firebase.json'da functions(5001) ve UI(4000) emulatorleri tanimli ama baslatilmiyor — kafa karistirici/portlar bos tutuluyor
 
@@ -61,7 +69,7 @@
   `reliability` | efor:L risk:medium | src/app/api/adisyon/[id]/kasiyer-talep/route.ts:42-87 ; src/app/api/adisyon/[id]/kapat/route.ts:35-80 ; src/app/api/adisyon/[id]/odeme-talebi/[talepId]/onayla/route.ts:30-43 ; vitest.config.ts:1-14 ; src/lib/firebase/admin.ts:45-54  
   Emulator-tabanli ayri bir vitest projesi/dosya grubu kur (orn. tests/integration/*.itest.ts, ayri include + setupFiles ile FIRESTORE_EMULATOR_HOST='127.0.0.1:8080' ve FIREBASE_AUTH_EMULATOR_HOST set). Maliyet: testler emulator calisiyorken kosmali (CI/local'de 'npm run emulators' on-kosulu) - bu yuzden ana 'vitest' (saf birim) suit'inden AYIR (orn. test:int script). Auth guard apiKasiyer'i atlamak
 
-### Orta etki (46)
+### Orta etki (42)
 
 - [ ] **Seed her acilista tam Node + firebase-admin prosesi spawn ediyor (idempotent atlasada)**  
   `perf-startup` | efor:S risk:low | Questo'yu Başlat.bat:93-96 ; scripts/seed.mjs:233-249  
@@ -159,10 +167,6 @@
   `perf-runtime` | efor:M risk:low | src/components/kasa/garson-menu.tsx:270 ; src/components/kasa/garson-menu.tsx:156 ; src/components/kasa/garson-menu.tsx:354  
   sepetTopla/sepetAdet'i useMemo([sepet]) ile hesapla. Daha onemlisi scroll-spy/aktifKategoriId state'ini urun render'indan ayir: kart agacini React.memo'lu alt bilesene cikar ki aktifKategoriId degisince urun kartlari render olmasin (chip vurgusu yalniz chip barini etkilesin).
 
-- [ ] **Eşzamanlı ödeme talepleri transaction dışında — aşırı ödeme / kalan-altı yarış koşulu**  
-  `correctness` | efor:M risk:low | src/app/api/adisyon/[id]/kasiyer-talep/route.ts:42 ; src/app/api/adisyon/[id]/kasiyer-talep/route.ts:77 ; src/lib/siparis/odeme.ts:9  
-  Talep yazımını db.runTransaction içine al: tx içinde adisyonu + 'odendi' talepleri oku, kalanı hesapla, 0<kalan kontrolü yap ve yeni talebi aynı tx'te yaz. Böylece eşzamanlı iki ödeme serileşir; ikincisi güncel kalanı görür. odenmisTutarKurus'u tx.get alacak şekilde refactor et (az doküman okur, maliyet düşük).
-
 - [ ] **Idempotency/audit koleksiyonları sonsuz büyür — emülatör TTL policy'leri uygulamaz**  
   `resource` | efor:M risk:low | src/lib/siparis/servis.ts:308 ; src/lib/audit/log.ts:43 ; firestore.rules:29  
   Emülatörde TTL çalışmadığından expireAt'a güvenme; periodic/bakım job'una manuel temizlik ekle: idempotency/ dokümanlarından expireAt<now (24h+) olanları sil; kullaniciAksiyonlari'ndan 180 gün öncesini sil. Idempotency anahtarı sabitlendikten sonra bu dokümanların gerçekten gerekli olduğunu da gözden geçir.
@@ -178,10 +182,6 @@
 - [ ] **Kenarlik (border) kontrasti dusuk — input/checkbox/secim sinirlari WCAG 1.4.11 gecmiyor**  
   `ux` | efor:M risk:low | src/app/globals.css:42-43 ; src/components/kasa/garson-menu.tsx:879-885 ; src/components/kasa/odeme-talepleri.tsx:116-120  
   Etkilesimli ogelerin (input, checkbox/radio, secilebilir opsiyon karti, ayrik buton) kenarliklarini en az 3:1 olacak sekilde koyulastir — --border'i form/secim baglamlarinda daha koyu bir tona al ya da ayri --input-border tokeni tanimla. muted-foreground/70 gibi dusuk tintleri en az tam muted-foreground'a cikar. Salt-metin muted-foreground tonlarini degistirmeye gerek yok.
-
-- [ ] **odenmisTutarKurus() icin saf reduce cekirdegi ayiklanip test edilemiyor (Firestore'a gomulu)**  
-  `correctness` | efor:M risk:low | src/lib/siparis/odeme.ts:9-21 ; src/app/api/adisyon/[id]/kapat/route.ts:50-58  
-  Saf bir yardimci ayikla: topla(docs: {toplamKurus?: number}[]): number ve odenmisTutarKurus ile kapat/route.ts bunu cagirsin. Yeni saf fonksiyona testler: toplamKurus eksik olan dokuman 0 sayilir mi (bilerek hatali veriyi yakalamak icin belki throw/log onerisi), toplamKurus=0 dokumanlari, bos liste -> 0, karisik degerlerin dogru toplandigi. Bu hem DRY hem testability kazanci saglar.
 
 - [ ] **Termal yazici (58/80mm ESC/POS) icin print CSS yok; yalniz A4**  
   `ux` | efor:M risk:low | src/app/globals.css:412 ; src/app/globals.css:477  
@@ -206,14 +206,6 @@
 - [ ] **Adisyonlar listesi: her acik adisyon icin ayri siparisler alt-koleksiyon sorgusu (N+1 okuma)**  
   `perf-runtime` | efor:M risk:medium | src/app/kasa/(panel)/adisyonlar/page.tsx:49  
   Kart ozeti icin gereken urun bilgisini adisyon dokumaninda denormalize tut (siparis yazilirken kalemOzeti alanini guncelle) — tek sorgu yeter. Alternatif: collectionGroup('siparisler') + adisyonId filtresi ile tek sorguda tum acik adisyonlarin kalemlerini cekip bellekte grupla. Mevcut N+1 desenini kaldirir.
-
-- [ ] **kasiyer-talep: odeme yazimi transaction disinda - esZamanli iki odeme adisyon toplamini asabilir (cift tahsilat)**  
-  `correctness` | efor:M risk:medium | src/app/api/adisyon/[id]/kasiyer-talep/route.ts:32 ; src/app/api/adisyon/[id]/kasiyer-talep/route.ts:42 ; src/app/api/adisyon/[id]/kasiyer-talep/route.ts:76 ; src/lib/siparis/odeme.ts:6  
-  Tum kasiyer-talep akisini db.runTransaction icine al: tx.get(aRef), odendi taleplerini tx icinde topla, kalan hesapla, toplamKurus belirle, ayni transaction'da talep dokumanini set et. Boylece ikinci es zamanli istek retry/abort olur. Bulgu 2,4,9 ile birlesik refactor edilmeli.
-
-- [ ] **odeme-talebi onayla: bekleyen musteri talebini kalan tutar dogrulamadan 'odendi' yapar - asiri odeme/cift dusme**  
-  `correctness` | efor:M risk:medium | src/app/api/adisyon/[id]/odeme-talebi/[talepId]/onayla/route.ts:34 ; src/app/api/adisyon/[id]/odeme-talebi/[talepId]/onayla/route.ts:39  
-  Onayla route'unu transaction'a al: adisyon + odendi talepleri oku, kalan hesapla, talebin toplamKurus'unu min(talep.toplamKurus, kalan)'a duzelt (kalan<=0 ise hata don/iptal et), sonra durum='odendi' yaz.
 
 - [ ] **Esit bolme tabani istemcide donduruluyor - interleaved odeme/iptal/urun ekleme sonrasi yanlis kisi basi**  
   `correctness` | efor:M risk:medium | src/components/kasa/kasiyer-bolme.tsx:53 ; src/components/kasa/kasiyer-bolme.tsx:137 ; src/app/api/adisyon/[id]/kasiyer-talep/route.ts:58  
@@ -247,7 +239,7 @@
   `perf-runtime` | efor:L risk:medium | src/app/admin/rapor/page.tsx:69 ; src/app/api/admin/rapor-sifirla/route.ts:57  
   Tek-kiraci oldugu icin gunluk ozet (rollup) dokumani yazmak (siparis yazimi sirasinda gunluk ciro/sayac dokumanina kategori/saat kirilimi eklemek) raporu O(1) okuma yapar. Minimum mudahale: kapali-veri purge (bulgu #2) bu sorgunun buyumesini de sinirlar.
 
-### Dusuk etki (68)
+### Dusuk etki (64)
 
 - [ ] **Build tetikleyicisinde .env.local var; baslat.bat onu her ilk kurulumda 'dokunuyor'**  
   `perf-startup` | efor:S risk:low | scripts/uygulama-baslat.ps1:26-31 ; Questo'yu Başlat.bat:17-22  
@@ -345,17 +337,9 @@
   `resource` | efor:S risk:low | src/app/admin/admin-shell.tsx:68 ; src/app/kasa/(panel)/kasa-shell.tsx:86 ; src/app/manifest.ts:19  
   logo.jpg'yi makul orta boyuta (PWA ikonu icin ~192-256px, WebP, ~8-15KB) on-optimize et. Cok kucultme — manifest.ts:19 PWA kurulum ikonu olarak kullaniyor. Bu, next/image ilk optimizasyon CPU'sunu ve disk cache boyutunu azaltir. 'favicon yeniden indiriliyor' kismi gecersiz (logo.ico ayri).
 
-- [ ] **Ödeme onaylama route'u transaction'sız ve aşırı-ödeme guard'ı yok**  
-  `correctness` | efor:S risk:low | src/app/api/adisyon/[id]/odeme-talebi/[talepId]/onayla/route.ts:30 ; src/app/api/adisyon/[id]/odeme-talebi/[talepId]/onayla/route.ts:39  
-  Akış gerçekten ölü ise route + OdemeOnayla component'ini kaldırarak hata/saldırı yüzeyini düşür. Tutulacaksa onayla'yı runTransaction'a al: tx içinde talebi oku, durum!='bekliyor' ise reddet, kalanı hesapla ve talep tutarı kalanı aşıyorsa sınırla/reddet, sonra durum güncelle.
-
 - [ ] **Günlük sipariş sayacı yalnızca artıyor, iptal/silmede geri alınmıyor ve gün dönümünde yarış**  
   `correctness` | efor:S risk:low | src/lib/siparis/servis.ts:252 ; src/lib/siparis/sayac.ts:6  
   Mevcut transaction+merge benzersizliği koruyor (kabul). Ek iş gerekmez; gün-dönümü kenar durumunu bir kez test et ve kabulü yorumla dokümante et. Düşük öncelik.
-
-- [ ] **Stok geri alımında stoktaMi:true koşulsuz set ediliyor — manuel 'satışa kapat' kararını eziyor**  
-  `correctness` | efor:S risk:low | src/app/api/siparis/[id]/durum/route.ts:146 ; src/app/api/admin/siparis-sil/route.ts:85  
-  Stok geri alımında stoktaMi:true'yu koşulsuz değil yalnız yeni miktar>0 olduğunda set et (zaten liste sadece stokMiktar'lı ürünleri içeriyor, çoğu durum doğru). stokTutarliMi (zod-semalar.ts:57) kuralıyla uyumlu tut. Düşük öncelik.
 
 - [ ] **Hata yanıtları emülatör modunda iç hata mesajını istemciye/log'a sızdırıyor**  
   `security` | efor:S risk:low | src/lib/utils/hata.ts:63 ; src/lib/utils/hata.ts:65  
@@ -368,10 +352,6 @@
 - [ ] **Esit bolme: ceil ile kisi basi yukari yuvarlanip UI tum dilimlerde sabit gosterir - makbuz son kisi icin tahsilattan farkli**  
   `correctness` | efor:S risk:low | src/lib/siparis/odeme.ts:35 ; src/components/kasa/kasiyer-bolme.tsx:93 ; src/components/kasa/kasiyer-bolme.tsx:284  
   UI'da her dilimin gercek tutarini goster (son dilim min(ceil,kalan) ile farkli) veya artigi acikca dagit: ilk (taban mod N) kisiye ceil, kalanlara floor. Sunucu zaten dogru toplam tahsil ediyor; sadece gosterimi hizala ki makbuz=tahsilat olsun.
-
-- [ ] **esit yontemi: tabanKurus=0/toplamKurus<=0 olsa bile talep yazilir - sahte 'odendi' kayitlari, kalan kapanmaz**  
-  `correctness` | efor:S risk:low | src/lib/siparis/odeme.ts:33 ; src/lib/utils/zod-semalar.ts:125 ; src/app/api/adisyon/[id]/kasiyer-talep/route.ts:76  
-  Sunucuda hesaplanan toplamKurus<=0 ise talep yazma, hata don (mevcut route.ts:44-50 guard'ina benzer, tum yontemler icin). zod semasinda esit tabanKurus icin min(1) yap; 0-tutarli odeme talebi hicbir yontemde yazilmamali.
 
 - [ ] **siparisYaz: araToplam/adisyon toplamKurus icin ust-sinir akil-saglik kontrolu yok**  
   `code-quality` | efor:S risk:low | src/lib/siparis/servis.ts:232 ; src/lib/siparis/servis.ts:263  
@@ -388,10 +368,6 @@
 - [ ] **kasiyer/siparis route'u restoran kapsamini (claims.restoranId) dogrulamiyor - diger kasiyer route'lariyla tutarsiz**  
   `security` | efor:S risk:low | src/app/api/kasiyer/siparis/route.ts:11 ; src/lib/admin/restoran.ts:11  
   kasiyer/siparis route'una da kapsamiDogrula(u) (src/lib/admin/restoran.ts:11) ekleyerek diger kasiyer route'lariyla ayni kapsam kontrolunu uygula. Tek satirlik ekleme; davranisi degistirmez, tutarliligi ve gelecekteki cok-restoran guvenligini saglar.
-
-- [ ] **odeme-talebi/onayla route'u olu kod - hicbir akis 'bekliyor' durumu uretmiyor (yetki yuzeyi gereksiz acik)**  
-  `code-quality` | efor:S risk:low | src/app/api/adisyon/[id]/odeme-talebi/[talepId]/onayla/route.ts:35 ; src/app/api/adisyon/[id]/kasiyer-talep/route.ts:83  
-  Eger musteri-tarafi QR odeme (durum:'bekliyor' ureten akis) tasarimdan kaldirildiysa bu route'u tamamen sil; korunacaksa 'bekliyor' ureten gercek bir akis ekle. Olu yazma endpoint'ini kaldirmak yetki yuzeyini kucultur.
 
 - [ ] **Sunucu hata mesajlari emulator ortaminda ic detay/yigin sizdiriyor (LAN istemcilerine)**  
   `security` | efor:S risk:low | src/lib/utils/hata.ts:64  
