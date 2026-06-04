@@ -72,6 +72,15 @@ export function GarsonMenu({ masaId, masaAd, eklemeMi = false }: Props) {
   // NOT: crypto.randomUUID KULLANMA — LAN/HTTP (güvensiz bağlam) telefonlarda yok.
   const gonderimAnahtariRef = useRef<string | null>(null);
 
+  // Sepet içeriği DEĞİŞİNCE gönderim anahtarını sıfırla: başarısız bir gönderimden
+  // sonra sepete ürün ekleyip tekrar denenirse TAZE anahtar üretilsin (yoksa sunucu
+  // eski sonucu döndürüp yeni ürünü yutardı). Değişmemiş sepetin retry'ı anahtarı
+  // KORUR → çift sipariş engellenir (gönderim sırasında 'gonderiliyor' guard'ı
+  // sepet değişimini zaten önler, yarış yok).
+  useEffect(() => {
+    gonderimAnahtariRef.current = null;
+  }, [sepet]);
+
   useEffect(() => {
     const unsub = onAuthStateChanged(getClientAuth(), (u) => {
       setAuthHazir(!!u);
