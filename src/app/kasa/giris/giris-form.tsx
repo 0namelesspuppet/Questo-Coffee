@@ -18,7 +18,11 @@ export function GirisForm() {
 
     const calistir = async () => {
       try {
-        await otoGirisYap();
+        // GÜVENLİ VARSAYILAN: çerez düştüğünde önceki rol bilinemez → en DÜŞÜK
+        // yetkiyle (garson, sahip:false) gir. Owner/kasiyer olmak için ana
+        // ekrandaki "Kasiyer" kartı (açık kullanıcı eylemi) kullanılmalı —
+        // sessiz yeniden-giriş asla owner'a yükseltmemeli.
+        await otoGirisYap('garson');
         if (iptal) return;
         router.replace(geri);
         router.refresh();

@@ -46,7 +46,15 @@ export async function POST(req: Request) {
     if (rol === 'garson') {
       try {
         user = await auth.getUserByEmail(garsonEmail);
-      } catch {
+      } catch (e) {
+        // YALNIZCA 'garson hesabı yok' durumunda owner'a düş (eski kurulum).
+        // Geçici/bağlantı hataları (ECONNREFUSED vb.) dış catch'e gitsin → 503
+        // (client retry eder); garson geçici hatada owner'a YÜKSELMESİN.
+        const kod =
+          e && typeof e === 'object' && 'code' in e
+            ? String((e as { code: unknown }).code)
+            : '';
+        if (kod !== 'auth/user-not-found') throw e;
         user = await auth.getUserByEmail(ownerEmail);
       }
     } else {
