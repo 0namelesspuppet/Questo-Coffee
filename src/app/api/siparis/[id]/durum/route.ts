@@ -74,6 +74,7 @@ export async function PATCH(
       const stokGeriAlim: Array<{
         ref: FirebaseFirestore.DocumentReference;
         miktar: number;
+        yenidenAc: boolean;
       }> = [];
 
       if (body.durum === 'iptal') {
@@ -126,6 +127,9 @@ export async function PATCH(
               stokGeriAlim.push({
                 ref: uRef,
                 miktar: ud.stokMiktar + adet,
+                // Yalnızca stok 0'a düşüp OTOMATİK kapandıysa yeniden aç; stok
+                // zaten >0 iken manuel 'satışa kapat' kararını ezme.
+                yenidenAc: ud.stokMiktar === 0,
               });
             }
           }
@@ -143,7 +147,10 @@ export async function PATCH(
       }
 
       for (const g of stokGeriAlim) {
-        tx.update(g.ref, { stokMiktar: g.miktar, stoktaMi: true });
+        tx.update(g.ref, {
+          stokMiktar: g.miktar,
+          ...(g.yenidenAc ? { stoktaMi: true } : {}),
+        });
       }
     });
 
