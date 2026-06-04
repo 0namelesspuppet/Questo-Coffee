@@ -34,8 +34,12 @@ const geciciMi = (e: unknown): boolean => {
   );
 };
 
-async function girisTekDene(): Promise<void> {
-  const tokenRes = await fetch('/api/auth/oto-giris', { method: 'POST' });
+async function girisTekDene(rol?: string): Promise<void> {
+  const tokenRes = await fetch('/api/auth/oto-giris', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(rol ? { rol } : {}),
+  });
   if (!tokenRes.ok) {
     const j = (await tokenRes.json().catch(() => ({}))) as { mesaj?: string };
     // 503 = emülatör henüz hazır değil → tekrar denenebilir.
@@ -61,11 +65,11 @@ async function girisTekDene(): Promise<void> {
   }
 }
 
-export async function otoGirisYap(): Promise<void> {
+export async function otoGirisYap(rol?: string): Promise<void> {
   let sonHata: unknown;
   for (let deneme = 1; deneme <= MAKS_DENEME; deneme++) {
     try {
-      await girisTekDene();
+      await girisTekDene(rol);
       return;
     } catch (e) {
       sonHata = e;

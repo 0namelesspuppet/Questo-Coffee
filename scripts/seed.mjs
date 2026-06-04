@@ -233,6 +233,42 @@ const koleksiyonuBosalt = async (koleksiyon) => {
 const main = async () => {
   console.log(`Seed başlıyor → restoranlar/${restoranId}\n`);
 
+  // Garson hesabı (sahip:false): operasyonel ama /admin ve yıkıcı işlemler yasak
+  // (guard'lar apiSahip/sahipGerekli ile zaten korur). Menü skip'inden ÖNCE ve
+  // owner bloğundan AYRI çalışır ki menüsü dolu mevcut kurulumlarda da oluşsun.
+  // Idempotent: varsa claim'i tazeler, yoksa oluşturur.
+  {
+    const garsonEmail =
+      process.env.SEED_GARSON_EMAIL ?? 'garson@questo.local';
+    try {
+      let g;
+      try {
+        g = await auth.getUserByEmail(garsonEmail);
+      } catch {
+        g = await auth.createUser({
+          email: garsonEmail,
+          password: 'questo123',
+          emailVerified: true,
+        });
+        console.log(
+          `+ garson kullanıcısı oluşturuldu: ${garsonEmail}  şifre: questo123`,
+        );
+      }
+      await auth.setCustomUserClaims(g.uid, {
+        rol: 'kasiyer',
+        sahip: false,
+        restoranId,
+      });
+      console.log(`+ claim: ${garsonEmail} → kasiyer (sahip:false)`);
+    } catch (e) {
+      console.warn(
+        `! ${garsonEmail} için işlem başarısız: ${
+          e instanceof Error ? e.message : e
+        }`,
+      );
+    }
+  }
+
   // Idempotent: emulator modunda menü zaten doluysa yeniden seed etme.
   // Aksi halde her açılışta masalar/menü silinip yeniden eklenir.
   // Zorla yeniden yüklemek için SEED_FORCE=1 (bkz. "Demo Veriyi Yukle.bat").

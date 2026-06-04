@@ -4,7 +4,7 @@ import { emulatorOrtami } from '@/lib/utils/ortam';
 
 export const runtime = 'nodejs';
 
-export async function POST() {
+export async function POST(req: Request) {
   try {
     // Otomatik giriş yalnızca yerel/emülatör POS'ta — gerçek bulut üretiminde
     // (emülatör yok) kesin yasak. NODE_ENV değil emülatör sinyaline bakılır,
@@ -16,9 +16,21 @@ export async function POST() {
         403,
       );
     }
-    const email =
+
+    // İstemci hangi rolle girmek istiyor? 'garson' → sahip:false hesabı; diğer
+    // her durum (gövdesiz dahil) → owner (sahip:true). Geriye dönük uyumlu.
+    let rol: string | undefined;
+    try {
+      const govde = (await req.json().catch(() => ({}))) as { rol?: unknown };
+      if (typeof govde.rol === 'string') rol = govde.rol;
+    } catch {
+      // gövdesiz istek — varsayılan owner akışı
+    }
+
+    const ownerEmail =
       process.env.KASA_OTOGIRIS_EMAIL ?? process.env.SEED_SAHIP_EMAIL;
-    if (!email) {
+    const garsonEmail = process.env.SEED_GARSON_EMAIL ?? 'garson@questo.local';
+    if (!ownerEmail) {
       throw new AppError(
         'yapilandirma_eksik',
         'Otomatik giriş için KASA_OTOGIRIS_EMAIL tanımlanmalı.',
@@ -26,7 +38,21 @@ export async function POST() {
       );
     }
 
-    const user = await getAdminAuth().getUserByEmail(email);
+    const auth = getAdminAuth();
+
+    // Garson rolü istendiyse garson hesabını dene; yoksa owner'a DÜŞ — login asla
+    // kırılmasın (eski kurulumlarda garson hesabı henüz oluşmamış olabilir).
+    let user;
+    if (rol === 'garson') {
+      try {
+        user = await auth.getUserByEmail(garsonEmail);
+      } catch {
+        user = await auth.getUserByEmail(ownerEmail);
+      }
+    } else {
+      user = await auth.getUserByEmail(ownerEmail);
+    }
+
     const claims = (user.customClaims ?? {}) as {
       rol?: string;
       sahip?: boolean;
@@ -35,12 +61,13 @@ export async function POST() {
     if (claims.rol !== 'kasiyer') {
       throw new AppError(
         'yapilandirma_eksik',
-        `Otomatik giriş kullanıcısı (${email}) için kasiyer claim'i yok.`,
+        `Otomatik giriş kullanıcısı (${user.email}) için kasiyer claim'i yok.`,
         500,
       );
     }
 
-    const customToken = await getAdminAuth().createCustomToken(user.uid, {
+    // sahip flag HESABIN claim'inden gelir: garson hesabı sahip:false, owner true.
+    const customToken = await auth.createCustomToken(user.uid, {
       rol: 'kasiyer',
       sahip: claims.sahip === true,
       ...(claims.restoranId ? { restoranId: claims.restoranId } : {}),

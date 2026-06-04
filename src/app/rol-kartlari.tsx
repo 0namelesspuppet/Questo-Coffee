@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 
 interface RolKart {
   href: string;
+  rol: string;
   baslik: string;
   altyazi: string;
   aciklama: string;
@@ -24,6 +25,7 @@ interface RolKart {
 const ROLLER: RolKart[] = [
   {
     href: '/kasa/masalar',
+    rol: 'garson',
     baslik: 'Garson',
     altyazi: 'Masalar',
     aciklama: 'Masaya git, menüden ürün seç, adisyona ekle.',
@@ -31,6 +33,7 @@ const ROLLER: RolKart[] = [
   },
   {
     href: '/kasa/adisyonlar',
+    rol: 'kasiyer',
     baslik: 'Kasiyer',
     altyazi: 'Adisyonlar',
     aciklama: 'Açık adisyonları gör, ödemeleri al, kapat.',
@@ -42,12 +45,16 @@ export function RolKartlari() {
   const router = useRouter();
   const [yuklenenHref, setYuklenenHref] = useState<string | null>(null);
 
-  const tikla = async (e: MouseEvent<HTMLAnchorElement>, href: string) => {
+  const tikla = async (
+    e: MouseEvent<HTMLAnchorElement>,
+    href: string,
+    rol: string,
+  ) => {
     e.preventDefault();
     if (yuklenenHref) return;
     setYuklenenHref(href);
     try {
-      await otoGirisYap();
+      await otoGirisYap(rol);
       router.push(href);
       router.refresh();
     } catch (err) {
@@ -69,7 +76,7 @@ export function RolKartlari() {
           <li key={r.href}>
             <Link
               href={r.href}
-              onClick={(e) => tikla(e, r.href)}
+              onClick={(e) => tikla(e, r.href, r.rol)}
               className={cn(
                 'group flex h-full flex-col items-start gap-4 rounded-2xl border bg-card p-6 text-left shadow-soft transition active:scale-[0.98] hover:bg-accent/40',
                 baskaYukleniyor && 'pointer-events-none opacity-60',
