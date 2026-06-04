@@ -34,8 +34,12 @@ export async function postYinele(
         body: govde,
       });
 
-      // 503 = sistem hazırlanıyor (emülatör henüz hazır değil). Bekle, tekrar dene.
-      if (res.status === 503 && i < denemeSayisi - 1) {
+      // 503/502/504 = sistem hazır değil / geçici sunucu hatası. Bekle, tekrar dene.
+      // (Sabit idempotency anahtarı verildiği için yazma isteği güvenle tekrarlanır.)
+      if (
+        (res.status === 503 || res.status === 502 || res.status === 504) &&
+        i < denemeSayisi - 1
+      ) {
         await bekle(400 * (i + 1));
         continue;
       }

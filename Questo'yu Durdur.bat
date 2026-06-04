@@ -24,7 +24,7 @@ REM asagidaki dogrulama bir kez yukseltme yapar.
 echo   [3/4] Servisler kapatiliyor (Next.js + Emulator)...
 REM Sadece Questo'nun portlarini dinleyen surecleri oldur (blanket /IM yerine) -
 REM boylece kullanicinin diger node/java uygulamalari etkilenmez.
-powershell -NoProfile -Command "@(3000,8080,9099,4000,4400,4500,9150,5001,9199) | ForEach-Object { (Get-NetTCPConnection -LocalPort $_ -ErrorAction SilentlyContinue).OwningProcess } | Sort-Object -Unique | Where-Object { $_ -gt 0 } | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }" >nul 2>&1
+powershell -NoProfile -Command "@(3000,8080,9099,4000,4400,4500,9150) | ForEach-Object { (Get-NetTCPConnection -LocalPort $_ -ErrorAction SilentlyContinue).OwningProcess } | Sort-Object -Unique | Where-Object { $_ -gt 0 } | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }" >nul 2>&1
 
 REM [4/4] Dogrula - portlar gercekten serbest mi?
 timeout /t 2 /nobreak >nul

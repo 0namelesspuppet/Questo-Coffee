@@ -57,8 +57,11 @@ export function CanliYenile({ izle }: { izle: IzlemeSpec[] }) {
             : query(col);
         const unsub = onSnapshot(
           q,
-          () => {
-            // İlk snapshot = mevcut durum (SSR ile zaten geldi) → tazeleme.
+          (snap) => {
+            // Cache kaynaklı (IndexedDB) snapshot'ları yoksay — açılışta gereksiz
+            // refresh/flicker tetiklemesin; yalnız sunucudan gelen değişimi dinle.
+            if (snap.metadata.fromCache) return;
+            // İlk (sunucu) snapshot = mevcut durum (SSR ile zaten geldi) → tazeleme yok.
             if (!ilkGeldi.has(i)) {
               ilkGeldi.add(i);
               return;

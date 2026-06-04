@@ -119,8 +119,9 @@ function Gunluk-Zip {
             $gecerliZip = $arsiv.Entries.Count -gt 0
             $arsiv.Dispose()
         } catch {
-            # Tur yuklenemedi ya da zip bozuk -> en azindan dosya boyutuna bak
-            $gecerliZip = (Test-Path $zipYolu) -and ((Get-Item $zipYolu).Length -gt 0)
+            # OpenRead basarisiz (bozuk zip VEYA tur yuklenemedi) -> ASLA gecerli
+            # sayma; rotasyonu atla ki bozuk zip eski saglam yedekleri silmesin.
+            $gecerliZip = $false
         }
         if (-not $gecerliZip) {
             Yaz-Log "Zip bozuk/bos, rotasyon atlandi (eski yedekler korunuyor): $zipYolu" 'ERROR'
