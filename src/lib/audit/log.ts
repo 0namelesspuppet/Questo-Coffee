@@ -2,6 +2,7 @@ import 'server-only';
 
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { getAdminDb } from '@/lib/firebase/admin';
+import { veriYedeginiTetikle } from '@/lib/firebase/kalicilik';
 import type { OturumKullanicisi } from '@/lib/auth/guard';
 
 export interface AuditKayit {
@@ -45,4 +46,9 @@ export const auditLogla = async (
   } catch (e) {
     console.error('[audit] log yazılamadı:', e);
   }
+
+  // Bu admin yazma işlemini (menü/fiyat/kategori/masa/ayar) emulator modunda
+  // hemen diske kalıcı kıl; uygulama düzgün kapatılmasa bile korunsun.
+  // Production'da no-op. Audit yazımı başarısız olsa bile çalışsın diye dışarıda.
+  await veriYedeginiTetikle();
 };

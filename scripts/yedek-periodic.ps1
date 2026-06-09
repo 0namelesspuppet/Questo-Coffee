@@ -18,14 +18,20 @@
 
 $ErrorActionPreference = 'Continue'
 $ProjectId = 'demo-questo'
-$PeriyotSn = 3600 # 60 dakika
-$ZipTutGun = 30   # son 30 günlük zip sakla
+# Degisiklik bayragi (emulator-veri.degisti) her $KontrolSn sn'de kontrol edilir;
+# varsa veri ANINDA export edilir. Bayrak olmasa bile her $ZorunluPeriyotSn sn'de
+# bir guvenlik exportu alinir (orn. siparis/odeme gibi bayrak koymayan yazimlar).
+$KontrolSn        = 5    # bayrak kontrol araligi (saniye)
+$ZorunluPeriyotSn = 300  # 5 dk: degisiklik olmasa bile guvenlik exportu
+$ZipTutGun        = 30   # son 30 günlük zip sakla
 
 # Script kendisi scripts/ içinde — kök iki üst klasör (script -> scripts -> kök)
 $ScriptKlasoru = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Kok = Split-Path -Parent $ScriptKlasoru
 $VeriKlasor = Join-Path $Kok 'emulator-veri'
 $YedekKlasor = Join-Path $Kok 'yedekler'
+# Uygulama bir admin yazma isleminden sonra bu dosyayi olusturur (src/lib/firebase/kalicilik.ts).
+$BayrakDosya = Join-Path $Kok 'emulator-veri.degisti'
 
 if (-not (Test-Path $YedekKlasor)) {
     New-Item -ItemType Directory -Path $YedekKlasor -Force | Out-Null
@@ -142,22 +148,40 @@ function Gunluk-Zip {
     }
 }
 
-Yaz-Log "Periodic yedek başladı (periyot=$PeriyotSn sn, zip rotation=$ZipTutGun gün)"
+Yaz-Log "Periodic yedek başladı (kontrol=$KontrolSn sn, guvenlik exportu=$ZorunluPeriyotSn sn, zip=$ZipTutGun gün)"
 Yaz-Log "Kök: $Kok"
 Yaz-Log "Veri: $VeriKlasor"
 Yaz-Log "Yedek: $YedekKlasor"
+Yaz-Log "Bayrak: $BayrakDosya"
 
 # İlk çalıştırmada hemen değil — emulator'ın başlamasını bekle
-Start-Sleep -Seconds 30
+Start-Sleep -Seconds 20
+
+$sonExport = Get-Date
 
 while ($true) {
+    Start-Sleep -Seconds $KontrolSn
     try {
+        $bayrakVar = Test-Path $BayrakDosya
+        $zorunlu = ((Get-Date) - $sonExport).TotalSeconds -ge $ZorunluPeriyotSn
+        if (-not ($bayrakVar -or $zorunlu)) { continue }
+
+        # Bayragi export'tan ÖNCE sil: export sürerken yeni bir degisiklik gelirse
+        # bayragi tekrar koyar ve sonraki turda yine export edilir (degisiklik kaybolmaz).
+        if ($bayrakVar) {
+            Remove-Item $BayrakDosya -Force -ErrorAction SilentlyContinue
+        }
+
         $basariliExport = Periyodik-Export
         if ($basariliExport) {
+            $sonExport = Get-Date
             Gunluk-Zip
+        } elseif ($bayrakVar) {
+            # Export basarisiz oldu — degisiklik sinyalini kaybetmemek icin bayragi
+            # geri koy ki sonraki turda tekrar denensin.
+            Set-Content -Path $BayrakDosya -Value (Get-Date -Format o) -ErrorAction SilentlyContinue
         }
     } catch {
         Yaz-Log "Döngüde beklenmedik hata: $($_.Exception.Message)" 'ERROR'
     }
-    Start-Sleep -Seconds $PeriyotSn
 }

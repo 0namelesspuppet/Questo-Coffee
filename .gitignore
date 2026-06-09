@@ -9,6 +9,7 @@ next-env.d.ts
 firebase-debug.log
 firestore-debug.log
 emulator-veri/
+emulator-veri.degisti
 emulator-veri-eski/
 emulator-veri-yeni/
 emulator-veri-elle-temp/
